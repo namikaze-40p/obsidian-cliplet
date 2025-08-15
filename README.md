@@ -1,94 +1,44 @@
-# Obsidian Sample Plugin
+# Obsidian Cliplet
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+This is an [Obsidian](https://obsidian.md/) plugin that combines a dedicated clipboard with a snippet feature, allowing you to efficiently manage frequently used text and snippets and retrieve them instantly when needed.
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+## Concept
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open Sample Modal" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+Cliplet provides both a dedicated clipboard and a snippet manager inside Obsidian. Its storage is fully independent from the OS clipboard, allowing you to store and reuse text, code, and other snippets without disrupting your workflow.
 
-## First time developing plugins?
+## Storage Options
 
-Quick starting guide for new plugin devs:
+Cliplet supports two storage methods. With a maximum of 200 items and encryption at rest, performance is comparable in most cases—choose based on portability and backup preferences.
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+- **IndexedDB** – Stored in Obsidian’s internal browser database **per vault and per device**. This allows you to keep different cliplet data on different devices or vaults, making it useful for separating work and personal content or desktop and mobile usage.
+- **data.json** – Stored as a JSON file inside your vault. Easy to locate and manage, and included in your vault backups, sync, and version control.
 
-## Releasing new releases
+Both options work entirely offline and keep your data private (content is encrypted at rest).
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+| Storage type | Advantages | Disadvantages |
+|--------------|------------|---------------|
+| **IndexedDB** | Per-device and per-vault isolation enables different data sets for different contexts. | Does not sync between devices; data stays local unless you manually export/move it. |
+| **data.json** | Easy to locate and manage. Included in vault backups, sync solutions, and Git history. Portable between devices. | Storing many large cliplets can increase file size, which may slow loading or sync times. |
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
-
-## Adding your plugin to the community plugin list
-
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+> [!NOTE]
+>
+> - **Encryption**: Cliplet encrypts stored content. While this prevents casual access, it is open-source software—someone with sufficient knowledge and access could theoretically decrypt the data.
+> - **data.json storage caution**: This applies only when using the `data.json` storage option. If your vault is stored on the internet (e.g., in a public GitHub repository or shared cloud folder), avoid making `data.json` publicly accessible. Even though its contents are encrypted, publishing it may still expose sensitive information to potential decryption attempts.
+> - **Device behavior**: IndexedDB is per device and per vault; `data.json` travels with your vault (Obsidian Sync/Dropbox/Git, etc.).
+> - **Switching**: You can change the storage method in settings. A built-in migration moves all items to the selected storage and deletes them from the previous one.
 
 ## How to use
 
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
+For the best experience, assign hotkeys to Cliplet commands in Obsidian’s settings.  
+This allows you to add, paste, and search cliplets quickly without leaving the keyboard.
 
-## Manually installing the plugin
+1. Add a cliplet: Run the “Add cliplet” command after selecting text.
+1. Paste the latest cliplet: Run the “Paste latest cliplet” command.
+1. Search cliplets: Run the “Search cliplet” command to find, then paste or edit the desired cliplet.
 
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
+![demo](https://raw.githubusercontent.com/namikaze-40p/obsidian-cliplet/main/demo/cliplet.gif)
 
-## Improve code quality with eslint (optional)
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- To use eslint with this project, make sure to install eslint from terminal:
-  - `npm install -g eslint`
-- To use eslint to analyze this project use this command:
-  - `eslint main.ts`
-  - eslint will then create a report with suggestions for code improvement by file and line number.
-- If your source code is in a folder, such as `src`, you can use eslint with this command to analyze all files in that folder:
-  - `eslint .\src\`
+## Installation
 
-## Funding URL
-
-You can include funding URLs where people who use your plugin can financially support it.
-
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
-
-```json
-{
-    "fundingUrl": "https://buymeacoffee.com"
-}
-```
-
-If you have multiple URLs, you can also do:
-
-```json
-{
-    "fundingUrl": {
-        "Buy Me a Coffee": "https://buymeacoffee.com",
-        "GitHub Sponsor": "https://github.com/sponsors",
-        "Patreon": "https://www.patreon.com/"
-    }
-}
-```
-
-## API Documentation
-
-See https://github.com/obsidianmd/obsidian-api
+You can find and install this plugin through Obsidian’s Community Plugins Browser.  
+For detailed steps or alternative installation methods, click [here](https://github.com/namikaze-40p/obsidian-cliplet/blob/main/docs/installation.md).

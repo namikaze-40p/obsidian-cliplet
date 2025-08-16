@@ -65,6 +65,35 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
 		return [cliplet.name, cliplet.content].join(' ');
 	}
 
+	async onChooseItem(cliplet: ClipletItem): Promise<void> {
+		const pastedCliplet = await pasteCliplet(this._editor, cliplet);
+		await this._service.putCliplet(pastedCliplet);
+		this._plugin.settings.latestClipletId = pastedCliplet.id;
+		await this._plugin.saveSettings();
+	}
+
+	renderSuggestion(item: FuzzyMatch<ClipletItem>, suggestionItemEl: HTMLElement): HTMLElement {
+		const cliplet = item.item;
+		const texts = cliplet.content.split(/\r?\n/);
+		const viewText = texts.length === 1 ? cliplet.content : `${texts[0]}...`;
+		const icon = cliplet.pinned ? 'pin' : (cliplet.name ? 'tag' : 'clipboard');
+
+		const doc = suggestionItemEl.ownerDocument;
+		const frag = doc.createDocumentFragment();
+
+		const iconWrap = doc.createElement('div');
+		iconWrap.className = 'suggestion-item-icon';
+		setIcon(iconWrap, icon);
+
+		const textSpan = doc.createElement('span');
+		textSpan.textContent = cliplet.name || viewText;
+		textSpan.dataset.clipletId = cliplet.id;
+
+		frag.append(iconWrap, textSpan);
+		suggestionItemEl.replaceChildren(frag);
+		return suggestionItemEl;
+	}
+
 	private async getCliplets(): Promise<void> {
 		this._cliplets = await this._service.getAllCliplets();
 		this.inputEl.dispatchEvent(new Event('input'));
@@ -173,35 +202,6 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
 				});
 			});
 		});
-	}
-  
-	async onChooseItem(cliplet: ClipletItem): Promise<void> {
-		const pastedCliplet = await pasteCliplet(this._editor, cliplet);
-		await this._service.putCliplet(pastedCliplet);
-		this._plugin.settings.latestClipletId = pastedCliplet.id;
-		await this._plugin.saveSettings();
-	}
-
-	renderSuggestion(item: FuzzyMatch<ClipletItem>, suggestionItemEl: HTMLElement): HTMLElement {
-		const cliplet = item.item;
-		const texts = cliplet.content.split(/\r?\n/);
-		const viewText = texts.length === 1 ? cliplet.content : `${texts[0]}...`;
-		const icon = cliplet.pinned ? 'pin' : (cliplet.name ? 'tag' : 'clipboard');
-
-		const doc = suggestionItemEl.ownerDocument;
-		const frag = doc.createDocumentFragment();
-
-		const iconWrap = doc.createElement('div');
-		iconWrap.className = 'suggestion-item-icon';
-		setIcon(iconWrap, icon);
-
-		const textSpan = doc.createElement('span');
-		textSpan.textContent = cliplet.name || viewText;
-		textSpan.dataset.clipletId = cliplet.id;
-
-		frag.append(iconWrap, textSpan);
-		suggestionItemEl.replaceChildren(frag);
-		return suggestionItemEl;
 	}
 
 	private generateActionMenuItems(): ActionMenuItem[] {

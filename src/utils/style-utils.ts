@@ -1,15 +1,15 @@
 const STYLES_ID = 'cliplet-styles';
 
-export const deleteStyles = () => {
-	const styleElm = document.getElementById(STYLES_ID);
+export const deleteStyles = (id = STYLES_ID) => {
+	const styleElm = document.getElementById(id);
 	if (styleElm) {
 		document.getElementsByTagName('HEAD')[0].removeChild(styleElm);
 	}
 };
 
-export const createStyles = (styles: { selector: string, property: string, value: string }[]): void => {
+export const createStyles = (styles: { selector: string, property: string, value: string }[], id = STYLES_ID): void => {
 	const styleSheet = document.createElement('style');
-	setAttributes(styleSheet, { type: 'text/css', id: STYLES_ID });
+	setAttributes(styleSheet, { type: 'text/css', id });
 
 	const header = document.getElementsByTagName('HEAD')[0];
 	header.appendChild(styleSheet);

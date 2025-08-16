@@ -3,7 +3,7 @@ import dayjs from 'dayjs';
 
 import Cliplet from '../main';
 import { ActionMenuItem, ClipletItem } from '../core/types';
-import { pasteCliplet } from '../utils';
+import { createStyles, deleteStyles, pasteCliplet } from '../utils';
 import { ActionMenuModal } from './action-menu-modal';
 import { ACTION_MENU_ITEMS, IS_APPLE, KEYS } from '../core/consts';
 import { ClipletConfirmModal } from './cliplet-confirm-modal';
@@ -201,25 +201,6 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
 		});
 	}
 
-	private openActionMenuModal(): void {
-		const actionMenuItems = this.generateActionMenuItems();
-		this._actionMenuModal = new ActionMenuModal(this.app, this.onSelectMenuItem.bind(this), actionMenuItems);
-		this._actionMenuModal.open();
-		this._actionMenuModal.whenClosed().then(() => (this._actionMenuModal = null));
-	}
-
-	private generateActionMenuItems(): ActionMenuItem[] {
-		if (this._currentCliplet) {
-			return ACTION_MENU_ITEMS;
-		} else {
-			const hideItemIds = ['paste', 'edit', 'pin', 'delete'];
-			if (!this._cliplets.length) {
-				hideItemIds.push('deleteAll');
-			}
-			return ACTION_MENU_ITEMS.filter(item => !hideItemIds.includes(item.id));
-		}
-	}
-
 	private handlingKeydownEvent(ev: KeyboardEvent): void {
 		switch (ev.key) {
 			case 'k':
@@ -272,13 +253,9 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
 					this.close();
 				}
 				return;
-			case 'edit': {
-				this._editorModal = new ClipletEditorModal(this.app, this._plugin, this._currentCliplet);
-				this._editorModal.open();
-				this._editorModal.whenClosed().then(async () => {
-					await this.getCliplets();
-					this._editorModal = null;
-				});
+			case 'edit':
+			case 'create': {
+				this.openEditorModal(item.id === 'edit');
 				return;
 			}
 			case 'pin': {
@@ -290,26 +267,12 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
 				}
 				return;
 			}
-			case 'create': {
-				this._editorModal = new ClipletEditorModal(this.app, this._plugin);
-				this._editorModal.open();
-				this._editorModal.whenClosed().then(async () => {
-					await this.getCliplets();
-					this._editorModal = null;
-				});
-				return;
-			}
 			case 'delete': {
 				const callback = async () => {
 					await this._service.deleteCliplet(this._currentCliplet?.id || '');
 					new Notice('Deleted cliplet.');
 				}
-				this._confirmModal = new ClipletConfirmModal(this.app, callback);
-				this._confirmModal.open();
-				this._confirmModal.whenClosed().then(async () => {
-					await this.getCliplets();
-					this._confirmModal = null;
-				});
+				this.openConfirmModal(callback, false);
 				return;
 			}
 			case 'deleteAll':{
@@ -317,16 +280,71 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
 					await this._service.deleteAllCliplets();
 					new Notice('Deleted all cliplets.');
 				}
-				this._confirmModal = new ClipletConfirmModal(this.app, callback, true);
-				this._confirmModal.open();
-				this._confirmModal.whenClosed().then(async () => {
-					await this.getCliplets();
-					this._confirmModal = null;
-				});
+				this.openConfirmModal(callback, true);
 				return;
 			}
 			default:
 				return;
+		}
+	}
+
+	private openEditorModal(isEdit: boolean): void {
+		const ref = document.querySelector<HTMLElement>('.cliplet-search-modal');
+		const selector = '.cliplet-editor-modal.ce-modal'; 
+		const styles = [
+			{ selector, property: 'top', value: `${ref?.offsetTop || 0}px` },
+			{ selector, property: 'height', value: `${ref?.offsetHeight || 0}px` },
+			{ selector, property: 'width', value: `${ref?.offsetWidth || 0}px` },
+		];
+		const stylesId = 'cliplet-editor-modal-styles';
+		createStyles(styles, stylesId);
+
+		this._editorModal = new ClipletEditorModal(this.app, this._plugin, isEdit ? this._currentCliplet : null);
+		this._editorModal.open();
+		this._editorModal.whenClosed().then(async () => {
+			await this.getCliplets();
+			this._editorModal = null;
+			deleteStyles(stylesId);
+		});
+	}
+
+	private openConfirmModal(callback: () => Promise<void>, isDeleteAll: boolean): void {
+		this._confirmModal = new ClipletConfirmModal(this.app, callback, isDeleteAll);
+		this._confirmModal.open();
+		this._confirmModal.whenClosed().then(async () => {
+			await this.getCliplets();
+			this._confirmModal = null;
+		});
+	}
+
+	private openActionMenuModal(): void {
+		const ref = document.querySelector<HTMLElement>('.cliplet-search-modal');
+		const selector = '.modal-container.mod-dim:has(.cliplet-action-menu-modal) .cliplet-action-menu-modal'; 
+		const styles = [
+			{ selector, property: 'right', value: `calc((100% - ${ref?.offsetWidth || 0}px) / 2 + 8px)` },
+			{ selector, property: 'bottom', value: `calc(100% - (442px + ${ref?.offsetTop || 0}px))` },
+		];
+		const stylesId = 'cliplet-action-menu-modal-styles';
+		createStyles(styles, stylesId);
+
+		const actionMenuItems = this.generateActionMenuItems();
+		this._actionMenuModal = new ActionMenuModal(this.app, this.onSelectMenuItem.bind(this), actionMenuItems);
+		this._actionMenuModal.open();
+		this._actionMenuModal.whenClosed().then(() => {
+			this._actionMenuModal = null;
+			deleteStyles(stylesId);
+		});
+	}
+
+	private generateActionMenuItems(): ActionMenuItem[] {
+		if (this._currentCliplet) {
+			return ACTION_MENU_ITEMS;
+		} else {
+			const hideItemIds = ['paste', 'edit', 'pin', 'delete'];
+			if (!this._cliplets.length) {
+				hideItemIds.push('deleteAll');
+			}
+			return ACTION_MENU_ITEMS.filter(item => !hideItemIds.includes(item.id));
 		}
 	}
 }

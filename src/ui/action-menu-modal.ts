@@ -10,7 +10,7 @@ export class ActionMenuModal extends FuzzySuggestModal<ActionMenuItem> {
 		super(app);
 
 		this.setPlaceholder('Search action...');
-		this.modalEl.addClasses(['action-menu-modal']);
+		this.modalEl.addClasses(['cliplet-action-menu-modal', 'ca-modal']);
 
 		this._eventListenerFn = this.handlingKeydownEvent.bind(this);
 		window.addEventListener('keydown', this._eventListenerFn);

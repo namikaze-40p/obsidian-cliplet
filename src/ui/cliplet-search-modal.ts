@@ -195,13 +195,17 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
 					el.createSpan().setText('Actions');
 					el.createDiv('cliplet-legend-label').setText(KEYS.mod);
 					el.createDiv('cliplet-legend-label').setText('K');
-					el.addEventListener('click', () => {
-						const actionMenuItems = this.generateActionMenuItems();
-						new ActionMenuModal(this.app, this.onSelectMenuItem.bind(this), actionMenuItems).open();
-					});
+					el.addEventListener('click', () => this.openActionMenuModal());
 				});
 			});
 		});
+	}
+
+	private openActionMenuModal(): void {
+		const actionMenuItems = this.generateActionMenuItems();
+		this._actionMenuModal = new ActionMenuModal(this.app, this.onSelectMenuItem.bind(this), actionMenuItems);
+		this._actionMenuModal.open();
+		this._actionMenuModal.whenClosed().then(() => (this._actionMenuModal = null));
 	}
 
 	private generateActionMenuItems(): ActionMenuItem[] {
@@ -223,10 +227,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
 					if (this._actionMenuModal) {
 						this._actionMenuModal.close();
 					} else {
-						const actionMenuItems = this.generateActionMenuItems();
-						this._actionMenuModal = new ActionMenuModal(this.app, this.onSelectMenuItem.bind(this), actionMenuItems);
-						this._actionMenuModal.open();
-						this._actionMenuModal.whenClosed().then(() => (this._actionMenuModal = null));
+						this.openActionMenuModal();
 					}
 					ev.preventDefault();
 				}

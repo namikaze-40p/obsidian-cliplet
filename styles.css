@@ -169,6 +169,14 @@ body.theme-dark .cliplet-legend-label {
 .cliplet-editor-modal.ce-modal {
 	padding: 1rem 0 0 0;
 	position: absolute;
+	display: grid;
+		grid-template-columns: 100%;
+		grid-template-rows: auto auto 1fr 2rem;
+		grid-template-areas:
+			"button"
+			"header"
+			"content"
+			"footer";
 
 	& > div:not(:last-child) {
 		padding: 0 1rem;
@@ -276,7 +284,7 @@ body.theme-dark .cliplet-legend-label {
 }
 
 body.is-phone {
-	.cliplet-search-modal {
+	.cliplet-search-modal.cs-modal.prompt {
 		grid-template-columns: 100%;
 		grid-template-rows: auto 1fr 1fr 2.5rem;
 		grid-template-areas:
@@ -326,7 +334,6 @@ body.is-phone {
 	.modal-container.mod-dim:has(.cliplet-action-menu-modal) .cliplet-action-menu-modal {
 		right: 0;
 		margin-right: 0;
-		bottom: calc(2.5rem + 2px);
 		height: max-content;
 		border: var(--prompt-border-width) solid var(--prompt-border-color) !important;
 		border-radius: 12px;
@@ -359,11 +366,14 @@ body.is-phone {
 				opacity: 0.8;
 			}
 		}
+	}
 
-		/* .ce-modal-footer {
-			justify-content: end;
+	.cliplet-editor-modal.ce-modal {
+		grid-template-rows: auto auto 1fr 2.5rem;
+
+		.ce-modal-footer {
 			height: 2.5rem;
-		} */
+		}
 	}
 
 	.cliplet-confirm-modal {

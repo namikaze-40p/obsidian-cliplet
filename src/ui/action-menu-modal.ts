@@ -72,6 +72,8 @@ export class ActionMenuModal extends FuzzySuggestModal<ActionMenuItem> {
 				return 'square-pen';
 			case 'pin':
 				return 'pin';
+			case 'unpin':
+				return 'pin-off';
 			case 'create':
 				return 'clipboard';
 			case 'delete':

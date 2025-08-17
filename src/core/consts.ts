@@ -41,6 +41,15 @@ export const ACTION_MENU_ITEMS = [
 		},
 	},
 	{
+		id: 'unpin',
+		text: 'Unpin cliplet',
+		labels: [KEYS.mod, 'P'],
+		command: {
+			key: 'p',
+			modifiers: [IS_APPLE ? 'metaKey' : 'ctrlKey'],
+		},
+	},
+	{
 		id: 'create',
 		text: 'Create cliplet',
 		labels: [KEYS.mod, 'N'],

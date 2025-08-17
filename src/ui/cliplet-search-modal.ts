@@ -259,7 +259,8 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
 				}
 				return;
 			}
-			case 'pin': {
+			case 'pin':
+			case 'unpin': {
 				if (this._currentCliplet) {
 					const now = dayjs().unix();
 					const pinned = this._currentCliplet.pinned ? 0 : now;
@@ -353,9 +354,10 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
 
 	private generateActionMenuItems(): ActionMenuItem[] {
 		if (this._currentCliplet) {
-			return ACTION_MENU_ITEMS;
+			const hideItemId = this._currentCliplet.pinned ? 'pin' : 'unpin';
+			return ACTION_MENU_ITEMS.filter(item => item.id !== hideItemId);
 		} else {
-			const hideItemIds = ['paste', 'edit', 'pin', 'delete'];
+			const hideItemIds = ['paste', 'edit', 'pin', 'unpin', 'delete'];
 			if (!this.getFilteredCliplets().length) {
 				hideItemIds.push('deleteResults');
 			}

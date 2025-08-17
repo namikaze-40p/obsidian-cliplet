@@ -60,8 +60,8 @@ export const ACTION_MENU_ITEMS = [
 		isDanger: true,
 	},
 	{
-		id: 'deleteAll',
-		text: 'Delete all cliplets',
+		id: 'deleteResults',
+		text: 'Delete results',
 		labels: [KEYS.ctrl, KEYS.shift, 'X'],
 		command: {
 			key: 'X',

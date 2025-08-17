@@ -226,7 +226,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
 				this.handlingActionMenu(ev, 'delete');
 				return;
 			case 'X':
-				this.handlingActionMenu(ev, 'deleteAll');
+				this.handlingActionMenu(ev, 'deleteResults');
 				return;
 			default:
 				// nop
@@ -253,9 +253,10 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
 					this.close();
 				}
 				return;
-			case 'edit':
-			case 'create': {
-				this.openEditorModal(item.id === 'edit');
+			case 'edit': {
+				if (this._currentCliplet) {
+					this.openEditorModal(true);
+				}
 				return;
 			}
 			case 'pin': {
@@ -267,20 +268,34 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
 				}
 				return;
 			}
-			case 'delete': {
-				const callback = async () => {
-					await this._service.deleteCliplet(this._currentCliplet?.id || '');
-					new Notice('Deleted cliplet.');
-				}
-				this.openConfirmModal(callback, false);
+			case 'create': {
+				this.openEditorModal(false);
 				return;
 			}
-			case 'deleteAll':{
-				const callback = async () => {
-					await this._service.deleteAllCliplets();
-					new Notice('Deleted all cliplets.');
+			case 'delete': {
+				if (this._currentCliplet) {
+					const callback = async () => {
+						await this._service.deleteCliplet(this._currentCliplet?.id || '');
+						new Notice('1 cliplet deleted.');
+					}
+					const message = 'Are you sure you want to delete this cliplet?';
+					this.openConfirmModal(callback, message);
 				}
-				this.openConfirmModal(callback, true);
+				return;
+			}
+			case 'deleteResults': {
+				if (this._currentCliplet) {
+					const cliplets = this.getFilteredCliplets();
+					const callback = async () => {
+						const promises = cliplets.map(({ id }) => this._service.deleteCliplet(id));
+						await Promise.all(promises);
+						new Notice(cliplets.length === 1 ? '1 cliplet deleted.' : `${cliplets.length} cliplets deleted.`);
+					}
+					const message = cliplets.length === 1
+						? 'Are you sure you want to delete this cliplet from the search results?'
+						:`Are you sure you want to delete all ${cliplets.length} cliplets in the search results?`;
+					this.openConfirmModal(callback, message);
+				}
 				return;
 			}
 			default:
@@ -308,8 +323,8 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
 		});
 	}
 
-	private openConfirmModal(callback: () => Promise<void>, isDeleteAll: boolean): void {
-		this._confirmModal = new ClipletConfirmModal(this.app, callback, isDeleteAll);
+	private openConfirmModal(callback: () => Promise<void>, message: string): void {
+		this._confirmModal = new ClipletConfirmModal(this.app, callback, message);
 		this._confirmModal.open();
 		this._confirmModal.whenClosed().then(async () => {
 			await this.getCliplets();
@@ -341,10 +356,15 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
 			return ACTION_MENU_ITEMS;
 		} else {
 			const hideItemIds = ['paste', 'edit', 'pin', 'delete'];
-			if (!this._cliplets.length) {
-				hideItemIds.push('deleteAll');
+			if (!this.getFilteredCliplets().length) {
+				hideItemIds.push('deleteResults');
 			}
 			return ACTION_MENU_ITEMS.filter(item => !hideItemIds.includes(item.id));
 		}
+	}
+
+	private getFilteredCliplets(): ClipletItem[] { 
+		const query = this.inputEl.value || '';
+		return this.getSuggestions(query).map(({ item }) => item);
 	}
 }

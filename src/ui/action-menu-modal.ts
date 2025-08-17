@@ -75,7 +75,7 @@ export class ActionMenuModal extends FuzzySuggestModal<ActionMenuItem> {
 			case 'create':
 				return 'clipboard';
 			case 'delete':
-			case 'deleteAll':
+			case 'deleteResults':
 				return 'trash-2';
 			default:
 				return 'ban';

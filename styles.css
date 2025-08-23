@@ -292,7 +292,8 @@ body.is-phone {
 			"results"
 			"detail"
 			"footer";
-		height: calc(var(--mobile-height) - var(--prompt-top) - var(--prompt-bottom)) !important;
+		height: calc(100vh - var(--prompt-top)) !important;
+		max-height: 100vh !important;
 		width: 100vw;
 		max-width: 100vw;
 

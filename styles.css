@@ -32,7 +32,6 @@
 	.prompt-results {
 		grid-area: results;
 		height: 400px;
-		display: none;
 
 		&.shown {
 			display: block;
@@ -97,7 +96,7 @@
 				justify-content: space-between;
 				padding: 0.25rem 0;
 
-				&:has(span:last-child:empty) {
+				&.is-hidden {
 					display: none;
 				}
 

@@ -30,7 +30,6 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
 	constructor(app: App, private _plugin: Cliplet, private _editor: Editor) {
 		super(app);
 		this._service = ClipletService.instance;
-		this.getCliplets();
 
 		this._eventListenerFn = this.handlingKeydownEvent.bind(this);
 		window.addEventListener('keydown', this._eventListenerFn);
@@ -43,13 +42,16 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
 		this.generateFooter(this.modalEl);
 	}
 
-	onOpen(): void {
+	async onOpen(): Promise<void> {
 		super.onOpen();
 
+		await this.getCliplets();
+		if (this._cliplets.length) {
+			this.updateDetailView(this._cliplets[0]);
+		}
 		const suggestionContainer = this.containerEl.querySelector('.prompt-results');
 		if (suggestionContainer) {
 			this.detectChangeSuggestionItems(suggestionContainer);
-			setTimeout(() => suggestionContainer.addClass('shown'), 0);			
 		}
 	}
 
@@ -129,16 +131,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
 
 		this.inputEl.addEventListener('input', () => {
 			const cliplet = this.findClipletItem(suggestionContainer.firstChild?.lastChild);
-			if (cliplet) {
-				this.updateDetailView(cliplet);
-			} else {
-				this._currentCliplet = null;
-				this._detailEls.content?.empty();
-				this._detailEls.count?.empty();
-				this._detailEls.lastUsed?.empty();
-				this._detailEls.lastModified?.empty();
-				this._detailEls.created?.empty();
-			}
+			this.updateDetailView(cliplet || null);
 			setTimeout(observeItems, 0);
 		});
 	}
@@ -163,14 +156,30 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
 		return this._cliplets.find(item => item.id === (el as HTMLSpanElement).dataset.clipletId);
 	}
 
-	private updateDetailView(cliplet: ClipletItem): void {
-		if (this._detailEls.content && this._detailEls.count && this._detailEls.lastUsed && this._detailEls.lastModified && this._detailEls.created) {	
-			this._currentCliplet = cliplet;
-			this._detailEls.content.textContent = cliplet.content;
-			this._detailEls.count.textContent = `${cliplet.count}`;
-			this._detailEls.lastUsed.textContent = cliplet.lastUsed ? dayjs.unix(cliplet.lastUsed).format('MMM D, YYYY [at] HH:mm:ss') : '';
-			this._detailEls.lastModified.textContent = cliplet.lastModified ? dayjs.unix(cliplet.lastModified).format('MMM D, YYYY [at] HH:mm:ss') : '';
-			this._detailEls.created.textContent = dayjs.unix(cliplet.created).format('MMM D, YYYY [at] HH:mm:ss');
+	private updateDetailView(cliplet: ClipletItem | null): void {
+		this._currentCliplet = cliplet;
+		const { content, count, lastUsed, lastModified, created } = this._detailEls;
+		if (!content || !count || !lastUsed || !lastModified || !created) {
+			return;
+		}
+		if (cliplet) {
+			const lastUsedText = cliplet.lastUsed ? dayjs.unix(cliplet.lastUsed).format('MMM D, YYYY [at] HH:mm:ss') : '';
+			const lastModifiedText = cliplet.lastModified ? dayjs.unix(cliplet.lastModified).format('MMM D, YYYY [at] HH:mm:ss') : '';
+
+			content.textContent = cliplet.content;
+			count.textContent = `${cliplet.count}`;
+			lastUsed.textContent = lastUsedText
+			lastModified.textContent = lastModifiedText;
+			created.textContent = dayjs.unix(cliplet.created).format('MMM D, YYYY [at] HH:mm:ss');
+
+			lastUsedText ? lastUsed.parentElement?.removeClass('is-hidden') : lastUsed.parentElement?.addClass('is-hidden');
+			lastModifiedText ? lastModified.parentElement?.removeClass('is-hidden') : lastModified.parentElement?.addClass('is-hidden');
+		} else {
+			content.empty();
+			count.empty();
+			lastUsed.empty();
+			lastModified.empty();
+			created.empty();
 		}
 	}
 

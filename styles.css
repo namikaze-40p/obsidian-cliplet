@@ -331,10 +331,11 @@ body.is-phone {
 		}
 	}
 
-	.modal-container.mod-dim:has(.cliplet-action-menu-modal) .cliplet-action-menu-modal {
+	.modal-container.mod-dim:has(.cliplet-action-menu-modal.ca-modal.prompt) .cliplet-action-menu-modal.ca-modal.prompt {
 		right: 0;
 		margin-right: 0;
-		height: max-content;
+		padding-bottom: var(--safe-area-inset-bottom) !important;
+		bottom: 0;
 		border: var(--prompt-border-width) solid var(--prompt-border-color) !important;
 		border-radius: 12px;
 
@@ -370,6 +371,8 @@ body.is-phone {
 
 	.cliplet-editor-modal.ce-modal {
 		grid-template-rows: auto auto 1fr 2.5rem;
+		height: calc(100vh - (var(--safe-area-inset-top) + var(--header-height) + var(--size-4-2))) !important;
+		padding-bottom: var(--safe-area-inset-bottom) !important;
 
 		.ce-modal-footer {
 			height: 2.5rem;

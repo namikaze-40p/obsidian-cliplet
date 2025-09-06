@@ -1,6 +1,6 @@
 # Obsidian Cliplet
 
-This is an [Obsidian](https://obsidian.md/) plugin that combines a dedicated clipboard with a snippet feature, allowing you to efficiently manage frequently used text and snippets and retrieve them instantly when needed.
+This is an [Obsidian](https://obsidian.md/) plugin that a clipboard and snippet manager — your own, separate from the OS clipboard.
 
 ## Concept
 
@@ -15,9 +15,9 @@ Cliplet supports two storage methods. With a maximum of 200 items and encryption
 
 Both options work entirely offline and keep your data private (content is encrypted at rest).
 
-| Storage type | Advantages | Disadvantages |
-|--------------|------------|---------------|
-| **IndexedDB** | Per-device and per-vault isolation enables different data sets for different contexts. | Does not sync between devices; data stays local unless you manually export/move it. |
+| Storage type  | Advantages                                                                                                       | Disadvantages                                                                             |
+| ------------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| **IndexedDB** | Per-device and per-vault isolation enables different data sets for different contexts.                           | Does not sync between devices; data stays local unless you manually export/move it.       |
 | **data.json** | Easy to locate and manage. Included in vault backups, sync solutions, and Git history. Portable between devices. | Storing many large cliplets can increase file size, which may slow loading or sync times. |
 
 > [!NOTE]

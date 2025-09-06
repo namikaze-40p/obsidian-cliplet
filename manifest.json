@@ -1,7 +1,7 @@
 {
   "id": "cliplet",
   "name": "Cliplet",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "minAppVersion": "1.9.10",
   "description": "Combines a dedicated clipboard with a snippet feature, allowing you to efficiently manage frequently used text and snippets and retrieve them instantly when needed.",
   "author": "namikaze-40p",

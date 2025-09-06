@@ -1,18 +1,13 @@
 {
-    "version": "0.2",
-    "language": "en",
-	"ignorePaths": [
-		".*",
-		"node_modules",
-		"esbuild.config.mjs",
-		"package-lock.json",
-		"package.json",
-		"tsconfig.json"
-	  ],
-    "words": [
-		"cliplet",
-		"cliplets",
-		"idbp",
-        "namikaze"
-    ]
+  "version": "0.2",
+  "language": "en",
+  "ignorePaths": [
+    ".*",
+    "node_modules",
+    "esbuild.config.mjs",
+    "package-lock.json",
+    "package.json",
+    "tsconfig.json"
+  ],
+  "words": ["cliplet", "cliplets", "idbp", "namikaze"]
 }

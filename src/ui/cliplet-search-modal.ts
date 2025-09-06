@@ -11,371 +11,400 @@ import { ClipletEditorModal } from './cliplet-editor-modal';
 import { ClipletService } from 'src/core/cliplet-service';
 
 export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
-	private _service: ClipletService;
-	private _cliplets: ClipletItem[] = [];
-	private _currentCliplet: ClipletItem | null = null;
-	private _detailEls: { [key: string]: HTMLSpanElement | null } = {
-		content: null,
-		count: null,
-		lastUsed: null,
-		lastModified: null,
-		created: null,
-	};
-	private _actionMenuItemMap = new Map(ACTION_MENU_ITEMS.map(item => [item.id, item]));
-	private _eventListenerFn: (ev: KeyboardEvent) => void;
-	private _actionMenuModal: ActionMenuModal | null = null;
-	private _editorModal: ClipletEditorModal | null = null;
-	private _confirmModal: ClipletConfirmModal | null = null;
+  private _service: ClipletService;
+  private _cliplets: ClipletItem[] = [];
+  private _currentCliplet: ClipletItem | null = null;
+  private _detailEls: { [key: string]: HTMLSpanElement | null } = {
+    content: null,
+    count: null,
+    lastUsed: null,
+    lastModified: null,
+    created: null,
+  };
+  private _actionMenuItemMap = new Map(ACTION_MENU_ITEMS.map((item) => [item.id, item]));
+  private _eventListenerFn: (ev: KeyboardEvent) => void;
+  private _actionMenuModal: ActionMenuModal | null = null;
+  private _editorModal: ClipletEditorModal | null = null;
+  private _confirmModal: ClipletConfirmModal | null = null;
 
-	constructor(app: App, private _plugin: Cliplet, private _editor: Editor) {
-		super(app);
-		this._service = ClipletService.instance;
+  constructor(
+    app: App,
+    private _plugin: Cliplet,
+    private _editor: Editor,
+  ) {
+    super(app);
+    this._service = ClipletService.instance;
 
-		this._eventListenerFn = this.handlingKeydownEvent.bind(this);
-		window.addEventListener('keydown', this._eventListenerFn);
+    this._eventListenerFn = this.handlingKeydownEvent.bind(this);
+    window.addEventListener('keydown', this._eventListenerFn);
 
-		this.modalEl.addClasses(['cliplet-search-modal', 'cs-modal']);
-		this.setPlaceholder('Search cliplet...');
+    this.modalEl.addClasses(['cliplet-search-modal', 'cs-modal']);
+    this.setPlaceholder('Search cliplet...');
 
-		const detailEl = this.modalEl.createDiv('cliplet-detail');
-		this.generateDetails(detailEl);
-		this.generateFooter(this.modalEl);
-	}
+    const detailEl = this.modalEl.createDiv('cliplet-detail');
+    this.generateDetails(detailEl);
+    this.generateFooter(this.modalEl);
+  }
 
-	async onOpen(): Promise<void> {
-		super.onOpen();
+  async onOpen(): Promise<void> {
+    super.onOpen();
 
-		await this.getCliplets();
-		if (this._cliplets.length) {
-			this.updateDetailView(this._cliplets[0]);
-		}
-		const suggestionContainer = this.containerEl.querySelector('.prompt-results');
-		if (suggestionContainer) {
-			this.detectChangeSuggestionItems(suggestionContainer);
-		}
-	}
+    await this.getCliplets();
+    if (this._cliplets.length) {
+      this.updateDetailView(this._cliplets[0]);
+    }
+    const suggestionContainer = this.containerEl.querySelector('.prompt-results');
+    if (suggestionContainer) {
+      this.detectChangeSuggestionItems(suggestionContainer);
+    }
+  }
 
-	onClose() {
-		window.removeEventListener('keydown', this._eventListenerFn);
-	}
+  onClose() {
+    window.removeEventListener('keydown', this._eventListenerFn);
+  }
 
-	getItems(): ClipletItem[] {
-		return this._cliplets;
-	}
-  
-	getItemText(cliplet: ClipletItem): string {
-		return [cliplet.name, cliplet.content].join(' ');
-	}
+  getItems(): ClipletItem[] {
+    return this._cliplets;
+  }
 
-	async onChooseItem(cliplet: ClipletItem): Promise<void> {
-		const pastedCliplet = await pasteCliplet(this._editor, cliplet);
-		await this._service.putCliplet(pastedCliplet);
-		this._plugin.settings.latestClipletId = pastedCliplet.id;
-		await this._plugin.saveSettings();
-	}
+  getItemText(cliplet: ClipletItem): string {
+    return [cliplet.name, cliplet.content].join(' ');
+  }
 
-	renderSuggestion(item: FuzzyMatch<ClipletItem>, suggestionItemEl: HTMLElement): HTMLElement {
-		const cliplet = item.item;
-		const texts = cliplet.content.split(/\r?\n/);
-		const viewText = texts.length === 1 ? cliplet.content : `${texts[0]}...`;
-		const icon = cliplet.pinned ? 'pin' : (cliplet.name ? 'tag' : 'clipboard');
+  async onChooseItem(cliplet: ClipletItem): Promise<void> {
+    const pastedCliplet = await pasteCliplet(this._editor, cliplet);
+    await this._service.putCliplet(pastedCliplet);
+    this._plugin.settings.latestClipletId = pastedCliplet.id;
+    await this._plugin.saveSettings();
+  }
 
-		const doc = suggestionItemEl.ownerDocument;
-		const frag = doc.createDocumentFragment();
+  renderSuggestion(item: FuzzyMatch<ClipletItem>, suggestionItemEl: HTMLElement): HTMLElement {
+    const cliplet = item.item;
+    const texts = cliplet.content.split(/\r?\n/);
+    const viewText = texts.length === 1 ? cliplet.content : `${texts[0]}...`;
+    const icon = cliplet.pinned ? 'pin' : cliplet.name ? 'tag' : 'clipboard';
 
-		const iconWrap = doc.createElement('div');
-		iconWrap.className = 'suggestion-item-icon';
-		setIcon(iconWrap, icon);
+    const doc = suggestionItemEl.ownerDocument;
+    const frag = doc.createDocumentFragment();
 
-		const textSpan = doc.createElement('span');
-		textSpan.textContent = cliplet.name || viewText;
-		textSpan.dataset.clipletId = cliplet.id;
+    const iconWrap = doc.createElement('div');
+    iconWrap.className = 'suggestion-item-icon';
+    setIcon(iconWrap, icon);
 
-		frag.append(iconWrap, textSpan);
-		suggestionItemEl.replaceChildren(frag);
-		return suggestionItemEl;
-	}
+    const textSpan = doc.createElement('span');
+    textSpan.textContent = cliplet.name || viewText;
+    textSpan.dataset.clipletId = cliplet.id;
 
-	private async getCliplets(): Promise<void> {
-		this._cliplets = await this._service.getAllCliplets();
-		this.inputEl.dispatchEvent(new Event('input'));
-	}
+    frag.append(iconWrap, textSpan);
+    suggestionItemEl.replaceChildren(frag);
+    return suggestionItemEl;
+  }
 
-	private generateDetails(detailEl: HTMLDivElement): void {
-		const detailMainEl = detailEl.createDiv('cliplet-detail-main');
-		const detailSubEl = detailEl.createDiv('cliplet-detail-sub');
+  private async getCliplets(): Promise<void> {
+    this._cliplets = await this._service.getAllCliplets();
+    this.inputEl.dispatchEvent(new Event('input'));
+  }
 
-		this.generateDetail(detailMainEl, '', 'content');
-		this.generateDetail(detailSubEl, 'Usage count', 'count');
-		this.generateDetail(detailSubEl, 'Last used', 'lastUsed');
-		this.generateDetail(detailSubEl, 'Last modified', 'lastModified');
-		this.generateDetail(detailSubEl, 'Created', 'created');
-	}
+  private generateDetails(detailEl: HTMLDivElement): void {
+    const detailMainEl = detailEl.createDiv('cliplet-detail-main');
+    const detailSubEl = detailEl.createDiv('cliplet-detail-sub');
 
-	private generateDetail(parentEl: HTMLDivElement, itemName: string, propName: string): void {
-		const wrapEl = parentEl.createDiv('cliplet-detail-item');
-		if (itemName) { 
-			wrapEl.createSpan('', spanEl => spanEl.setText(itemName));
-		}
-		this._detailEls[propName] = wrapEl.createSpan('');
-	}
+    this.generateDetail(detailMainEl, '', 'content');
+    this.generateDetail(detailSubEl, 'Usage count', 'count');
+    this.generateDetail(detailSubEl, 'Last used', 'lastUsed');
+    this.generateDetail(detailSubEl, 'Last modified', 'lastModified');
+    this.generateDetail(detailSubEl, 'Created', 'created');
+  }
 
-	private detectChangeSuggestionItems(suggestionContainer: Element): void {
-		const observer = this.generateObserver();
-		const observeItems = () => {
-			const items = suggestionContainer.querySelectorAll('.suggestion-item');
-			items.forEach(item => observer.observe(item, { attributes: true, attributeFilter: ['class'] }));
-		};
+  private generateDetail(parentEl: HTMLDivElement, itemName: string, propName: string): void {
+    const wrapEl = parentEl.createDiv('cliplet-detail-item');
+    if (itemName) {
+      wrapEl.createSpan('', (spanEl) => spanEl.setText(itemName));
+    }
+    this._detailEls[propName] = wrapEl.createSpan('');
+  }
 
-		observeItems();
+  private detectChangeSuggestionItems(suggestionContainer: Element): void {
+    const observer = this.generateObserver();
+    const observeItems = () => {
+      const items = suggestionContainer.querySelectorAll('.suggestion-item');
+      items.forEach((item) =>
+        observer.observe(item, { attributes: true, attributeFilter: ['class'] }),
+      );
+    };
 
-		this.inputEl.addEventListener('input', () => {
-			const cliplet = this.findClipletItem(suggestionContainer.firstChild?.lastChild);
-			this.updateDetailView(cliplet || null);
-			setTimeout(observeItems, 0);
-		});
-	}
+    observeItems();
 
-	private generateObserver(): MutationObserver {
-		return new MutationObserver((mutations: MutationRecord[]) => {
-			for (const { type, attributeName, target } of mutations) {
-				if (type === 'attributes' && attributeName === 'class') {
-					const cliplet = this.findClipletItem(target.lastChild);
-					if (cliplet) {
-						this.updateDetailView(cliplet);
-					}
-				}
-			}
-		});
-	}
+    this.inputEl.addEventListener('input', () => {
+      const cliplet = this.findClipletItem(suggestionContainer.firstChild?.lastChild);
+      this.updateDetailView(cliplet || null);
+      setTimeout(observeItems, 0);
+    });
+  }
 
-	private findClipletItem(el: ChildNode | null | undefined): ClipletItem | undefined {
-		if (el?.nodeName !== 'SPAN') {
-			return;
-		}
-		return this._cliplets.find(item => item.id === (el as HTMLSpanElement).dataset.clipletId);
-	}
+  private generateObserver(): MutationObserver {
+    return new MutationObserver((mutations: MutationRecord[]) => {
+      for (const { type, attributeName, target } of mutations) {
+        if (type === 'attributes' && attributeName === 'class') {
+          const cliplet = this.findClipletItem(target.lastChild);
+          if (cliplet) {
+            this.updateDetailView(cliplet);
+          }
+        }
+      }
+    });
+  }
 
-	private updateDetailView(cliplet: ClipletItem | null): void {
-		this._currentCliplet = cliplet;
-		const { content, count, lastUsed, lastModified, created } = this._detailEls;
-		if (!content || !count || !lastUsed || !lastModified || !created) {
-			return;
-		}
-		if (cliplet) {
-			const lastUsedText = cliplet.lastUsed ? dayjs.unix(cliplet.lastUsed).format('MMM D, YYYY [at] HH:mm:ss') : '';
-			const lastModifiedText = cliplet.lastModified ? dayjs.unix(cliplet.lastModified).format('MMM D, YYYY [at] HH:mm:ss') : '';
+  private findClipletItem(el: ChildNode | null | undefined): ClipletItem | undefined {
+    if (el?.nodeName !== 'SPAN') {
+      return;
+    }
+    return this._cliplets.find((item) => item.id === (el as HTMLSpanElement).dataset.clipletId);
+  }
 
-			content.textContent = cliplet.content;
-			count.textContent = `${cliplet.count}`;
-			lastUsed.textContent = lastUsedText
-			lastModified.textContent = lastModifiedText;
-			created.textContent = dayjs.unix(cliplet.created).format('MMM D, YYYY [at] HH:mm:ss');
+  private updateDetailView(cliplet: ClipletItem | null): void {
+    this._currentCliplet = cliplet;
+    const { content, count, lastUsed, lastModified, created } = this._detailEls;
+    if (!content || !count || !lastUsed || !lastModified || !created) {
+      return;
+    }
+    if (cliplet) {
+      const lastUsedText = cliplet.lastUsed
+        ? dayjs.unix(cliplet.lastUsed).format('MMM D, YYYY [at] HH:mm:ss')
+        : '';
+      const lastModifiedText = cliplet.lastModified
+        ? dayjs.unix(cliplet.lastModified).format('MMM D, YYYY [at] HH:mm:ss')
+        : '';
 
-			lastUsedText ? lastUsed.parentElement?.removeClass('is-hidden') : lastUsed.parentElement?.addClass('is-hidden');
-			lastModifiedText ? lastModified.parentElement?.removeClass('is-hidden') : lastModified.parentElement?.addClass('is-hidden');
-		} else {
-			content.empty();
-			count.empty();
-			lastUsed.empty();
-			lastModified.empty();
-			created.empty();
-		}
-	}
+      content.textContent = cliplet.content;
+      count.textContent = `${cliplet.count}`;
+      lastUsed.textContent = lastUsedText;
+      lastModified.textContent = lastModifiedText;
+      created.textContent = dayjs.unix(cliplet.created).format('MMM D, YYYY [at] HH:mm:ss');
 
-	private generateFooter(contentEl: HTMLElement): void {
-		contentEl.createDiv('cs-modal-footer', footerEl => {
-			footerEl.createSpan('', el => {
-				el.createSpan().setText('Search cliplet');
-			});
-			footerEl.createDiv('', wrapperEl => {
-				wrapperEl.createDiv('cs-modal-legend', el => {
-					el.createSpan().setText('Paste');
-					el.createDiv('cliplet-legend-label').setText(KEYS.enter);
-					el.addEventListener('click', () => {
-						if (this._currentCliplet) {
-							this.onChooseItem(this._currentCliplet);
-							this.close();
-						}
-					});
-				});
-				wrapperEl.createSpan('cs-modal-legend-separator').setText(' | ');
-				wrapperEl.createDiv('cs-modal-legend', el => {
-					el.createSpan().setText('Actions');
-					el.createDiv('cliplet-legend-label').setText(KEYS.mod);
-					el.createDiv('cliplet-legend-label').setText('K');
-					el.addEventListener('click', () => this.openActionMenuModal());
-				});
-			});
-		});
-	}
+      lastUsedText
+        ? lastUsed.parentElement?.removeClass('is-hidden')
+        : lastUsed.parentElement?.addClass('is-hidden');
+      lastModifiedText
+        ? lastModified.parentElement?.removeClass('is-hidden')
+        : lastModified.parentElement?.addClass('is-hidden');
+    } else {
+      content.empty();
+      count.empty();
+      lastUsed.empty();
+      lastModified.empty();
+      created.empty();
+    }
+  }
 
-	private handlingKeydownEvent(ev: KeyboardEvent): void {
-		switch (ev.key) {
-			case 'k':
-				if (IS_APPLE ? ev.metaKey : ev.ctrlKey) {
-					if (this._actionMenuModal) {
-						this._actionMenuModal.close();
-					} else {
-						this.openActionMenuModal();
-					}
-					ev.preventDefault();
-				}
-				return;
-			case 'e':
-				this.handlingActionMenu(ev, 'edit');
-				return;
-			case 'p':
-				this.handlingActionMenu(ev, 'pin');
-				return;
-			case 'n':
-				this.handlingActionMenu(ev, 'create');
-				return;
-			case 'x':
-				this.handlingActionMenu(ev, 'delete');
-				return;
-			case 'X':
-				this.handlingActionMenu(ev, 'deleteResults');
-				return;
-			default:
-				// nop
-				return;
-		}
-	}
+  private generateFooter(contentEl: HTMLElement): void {
+    contentEl.createDiv('cs-modal-footer', (footerEl) => {
+      footerEl.createSpan('', (el) => {
+        el.createSpan().setText('Search cliplet');
+      });
+      footerEl.createDiv('', (wrapperEl) => {
+        wrapperEl.createDiv('cs-modal-legend', (el) => {
+          el.createSpan().setText('Paste');
+          el.createDiv('cliplet-legend-label').setText(KEYS.enter);
+          el.addEventListener('click', () => {
+            if (this._currentCliplet) {
+              this.onChooseItem(this._currentCliplet);
+              this.close();
+            }
+          });
+        });
+        wrapperEl.createSpan('cs-modal-legend-separator').setText(' | ');
+        wrapperEl.createDiv('cs-modal-legend', (el) => {
+          el.createSpan().setText('Actions');
+          el.createDiv('cliplet-legend-label').setText(KEYS.mod);
+          el.createDiv('cliplet-legend-label').setText('K');
+          el.addEventListener('click', () => this.openActionMenuModal());
+        });
+      });
+    });
+  }
 
-	private handlingActionMenu(ev: KeyboardEvent, actionId: string): void { 
-		if (this._actionMenuModal || this._editorModal || this._confirmModal) {
-			return;
-		}
-		const menuItem = this._actionMenuItemMap.get(actionId);
-		if (menuItem && menuItem.command.modifiers?.every(modifier => ev[modifier as keyof KeyboardEvent])) {
-			this.onSelectMenuItem(menuItem);
-			ev.preventDefault();
-		}
-	}
+  private handlingKeydownEvent(ev: KeyboardEvent): void {
+    switch (ev.key) {
+      case 'k':
+        if (IS_APPLE ? ev.metaKey : ev.ctrlKey) {
+          if (this._actionMenuModal) {
+            this._actionMenuModal.close();
+          } else {
+            this.openActionMenuModal();
+          }
+          ev.preventDefault();
+        }
+        return;
+      case 'e':
+        this.handlingActionMenu(ev, 'edit');
+        return;
+      case 'p':
+        this.handlingActionMenu(ev, 'pin');
+        return;
+      case 'n':
+        this.handlingActionMenu(ev, 'create');
+        return;
+      case 'x':
+        this.handlingActionMenu(ev, 'delete');
+        return;
+      case 'X':
+        this.handlingActionMenu(ev, 'deleteResults');
+        return;
+      default:
+        // nop
+        return;
+    }
+  }
 
-	private async onSelectMenuItem(item: ActionMenuItem): Promise<void> {
-		switch (item.id) {
-			case 'paste':
-				if (this._currentCliplet) {
-					await this.onChooseItem(this._currentCliplet);
-					this.close();
-				}
-				return;
-			case 'edit': {
-				if (this._currentCliplet) {
-					this.openEditorModal(true);
-				}
-				return;
-			}
-			case 'pin':
-			case 'unpin': {
-				if (this._currentCliplet) {
-					const now = dayjs().unix();
-					const pinned = this._currentCliplet.pinned ? 0 : now;
-					await this._service.putCliplet({ ...this._currentCliplet, pinned, lastModified: now });
-					await this.getCliplets();
-				}
-				return;
-			}
-			case 'create': {
-				this.openEditorModal(false);
-				return;
-			}
-			case 'delete': {
-				if (this._currentCliplet) {
-					const callback = async () => {
-						await this._service.deleteCliplet(this._currentCliplet?.id || '');
-						new Notice('1 cliplet deleted.');
-					}
-					const message = 'Are you sure you want to delete this cliplet?';
-					this.openConfirmModal(callback, message);
-				}
-				return;
-			}
-			case 'deleteResults': {
-				if (this._currentCliplet) {
-					const cliplets = this.getFilteredCliplets();
-					const callback = async () => {
-						const promises = cliplets.map(({ id }) => this._service.deleteCliplet(id));
-						await Promise.all(promises);
-						new Notice(cliplets.length === 1 ? '1 cliplet deleted.' : `${cliplets.length} cliplets deleted.`);
-					}
-					const message = cliplets.length === 1
-						? 'Are you sure you want to delete this cliplet from the search results?'
-						:`Are you sure you want to delete all ${cliplets.length} cliplets in the search results?`;
-					this.openConfirmModal(callback, message);
-				}
-				return;
-			}
-			default:
-				return;
-		}
-	}
+  private handlingActionMenu(ev: KeyboardEvent, actionId: string): void {
+    if (this._actionMenuModal || this._editorModal || this._confirmModal) {
+      return;
+    }
+    const menuItem = this._actionMenuItemMap.get(actionId);
+    if (
+      menuItem &&
+      menuItem.command.modifiers?.every((modifier) => ev[modifier as keyof KeyboardEvent])
+    ) {
+      this.onSelectMenuItem(menuItem);
+      ev.preventDefault();
+    }
+  }
 
-	private openEditorModal(isEdit: boolean): void {
-		const ref = document.querySelector<HTMLElement>('.cliplet-search-modal');
-		const selector = '.cliplet-editor-modal.ce-modal'; 
-		const styles = [
-			{ selector, property: 'top', value: `${ref?.offsetTop || 0}px` },
-			{ selector, property: 'height', value: `${ref?.offsetHeight || 0}px` },
-			{ selector, property: 'width', value: `${ref?.offsetWidth || 0}px` },
-		];
-		const stylesId = 'cliplet-editor-modal-styles';
-		createStyles(styles, stylesId);
+  private async onSelectMenuItem(item: ActionMenuItem): Promise<void> {
+    switch (item.id) {
+      case 'paste':
+        if (this._currentCliplet) {
+          await this.onChooseItem(this._currentCliplet);
+          this.close();
+        }
+        return;
+      case 'edit': {
+        if (this._currentCliplet) {
+          this.openEditorModal(true);
+        }
+        return;
+      }
+      case 'pin':
+      case 'unpin': {
+        if (this._currentCliplet) {
+          const now = dayjs().unix();
+          const pinned = this._currentCliplet.pinned ? 0 : now;
+          await this._service.putCliplet({ ...this._currentCliplet, pinned, lastModified: now });
+          await this.getCliplets();
+        }
+        return;
+      }
+      case 'create': {
+        this.openEditorModal(false);
+        return;
+      }
+      case 'delete': {
+        if (this._currentCliplet) {
+          const callback = async () => {
+            await this._service.deleteCliplet(this._currentCliplet?.id || '');
+            new Notice('1 cliplet deleted.');
+          };
+          const message = 'Are you sure you want to delete this cliplet?';
+          this.openConfirmModal(callback, message);
+        }
+        return;
+      }
+      case 'deleteResults': {
+        if (this._currentCliplet) {
+          const cliplets = this.getFilteredCliplets();
+          const callback = async () => {
+            const promises = cliplets.map(({ id }) => this._service.deleteCliplet(id));
+            await Promise.all(promises);
+            new Notice(
+              cliplets.length === 1 ? '1 cliplet deleted.' : `${cliplets.length} cliplets deleted.`,
+            );
+          };
+          const message =
+            cliplets.length === 1
+              ? 'Are you sure you want to delete this cliplet from the search results?'
+              : `Are you sure you want to delete all ${cliplets.length} cliplets in the search results?`;
+          this.openConfirmModal(callback, message);
+        }
+        return;
+      }
+      default:
+        return;
+    }
+  }
 
-		this._editorModal = new ClipletEditorModal(this.app, this._plugin, isEdit ? this._currentCliplet : null);
-		this._editorModal.open();
-		this._editorModal.whenClosed().then(async () => {
-			await this.getCliplets();
-			this._editorModal = null;
-			deleteStyles(stylesId);
-		});
-	}
+  private openEditorModal(isEdit: boolean): void {
+    const ref = document.querySelector<HTMLElement>('.cliplet-search-modal');
+    const selector = '.cliplet-editor-modal.ce-modal';
+    const styles = [
+      { selector, property: 'top', value: `${ref?.offsetTop || 0}px` },
+      { selector, property: 'height', value: `${ref?.offsetHeight || 0}px` },
+      { selector, property: 'width', value: `${ref?.offsetWidth || 0}px` },
+    ];
+    const stylesId = 'cliplet-editor-modal-styles';
+    createStyles(styles, stylesId);
 
-	private openConfirmModal(callback: () => Promise<void>, message: string): void {
-		this._confirmModal = new ClipletConfirmModal(this.app, callback, message);
-		this._confirmModal.open();
-		this._confirmModal.whenClosed().then(async () => {
-			await this.getCliplets();
-			this._confirmModal = null;
-		});
-	}
+    this._editorModal = new ClipletEditorModal(
+      this.app,
+      this._plugin,
+      isEdit ? this._currentCliplet : null,
+    );
+    this._editorModal.open();
+    this._editorModal.whenClosed().then(async () => {
+      await this.getCliplets();
+      this._editorModal = null;
+      deleteStyles(stylesId);
+    });
+  }
 
-	private openActionMenuModal(): void {
-		const ref = document.querySelector<HTMLElement>('.cliplet-search-modal');
-		const selector = '.modal-container.mod-dim:has(.cliplet-action-menu-modal) .cliplet-action-menu-modal'; 
-		const styles = [
-			{ selector, property: 'right', value: `calc((100% - ${ref?.offsetWidth || 0}px) / 2 + 8px)` },
-			{ selector, property: 'bottom', value: `calc(100% - (442px + ${ref?.offsetTop || 0}px))` },
-		];
-		const stylesId = 'cliplet-action-menu-modal-styles';
-		createStyles(styles, stylesId);
+  private openConfirmModal(callback: () => Promise<void>, message: string): void {
+    this._confirmModal = new ClipletConfirmModal(this.app, callback, message);
+    this._confirmModal.open();
+    this._confirmModal.whenClosed().then(async () => {
+      await this.getCliplets();
+      this._confirmModal = null;
+    });
+  }
 
-		const actionMenuItems = this.generateActionMenuItems();
-		this._actionMenuModal = new ActionMenuModal(this.app, this.onSelectMenuItem.bind(this), actionMenuItems);
-		this._actionMenuModal.open();
-		this._actionMenuModal.whenClosed().then(() => {
-			this._actionMenuModal = null;
-			deleteStyles(stylesId);
-		});
-	}
+  private openActionMenuModal(): void {
+    const ref = document.querySelector<HTMLElement>('.cliplet-search-modal');
+    const selector =
+      '.modal-container.mod-dim:has(.cliplet-action-menu-modal) .cliplet-action-menu-modal';
+    const styles = [
+      { selector, property: 'right', value: `calc((100% - ${ref?.offsetWidth || 0}px) / 2 + 8px)` },
+      { selector, property: 'bottom', value: `calc(100% - (442px + ${ref?.offsetTop || 0}px))` },
+    ];
+    const stylesId = 'cliplet-action-menu-modal-styles';
+    createStyles(styles, stylesId);
 
-	private generateActionMenuItems(): ActionMenuItem[] {
-		if (this._currentCliplet) {
-			const hideItemId = this._currentCliplet.pinned ? 'pin' : 'unpin';
-			return ACTION_MENU_ITEMS.filter(item => item.id !== hideItemId);
-		} else {
-			const hideItemIds = ['paste', 'edit', 'pin', 'unpin', 'delete'];
-			if (!this.getFilteredCliplets().length) {
-				hideItemIds.push('deleteResults');
-			}
-			return ACTION_MENU_ITEMS.filter(item => !hideItemIds.includes(item.id));
-		}
-	}
+    const actionMenuItems = this.generateActionMenuItems();
+    this._actionMenuModal = new ActionMenuModal(
+      this.app,
+      this.onSelectMenuItem.bind(this),
+      actionMenuItems,
+    );
+    this._actionMenuModal.open();
+    this._actionMenuModal.whenClosed().then(() => {
+      this._actionMenuModal = null;
+      deleteStyles(stylesId);
+    });
+  }
 
-	private getFilteredCliplets(): ClipletItem[] { 
-		const query = this.inputEl.value || '';
-		return this.getSuggestions(query).map(({ item }) => item);
-	}
+  private generateActionMenuItems(): ActionMenuItem[] {
+    if (this._currentCliplet) {
+      const hideItemId = this._currentCliplet.pinned ? 'pin' : 'unpin';
+      return ACTION_MENU_ITEMS.filter((item) => item.id !== hideItemId);
+    } else {
+      const hideItemIds = ['paste', 'edit', 'pin', 'unpin', 'delete'];
+      if (!this.getFilteredCliplets().length) {
+        hideItemIds.push('deleteResults');
+      }
+      return ACTION_MENU_ITEMS.filter((item) => !hideItemIds.includes(item.id));
+    }
+  }
+
+  private getFilteredCliplets(): ClipletItem[] {
+    const query = this.inputEl.value || '';
+    return this.getSuggestions(query).map(({ item }) => item);
+  }
 }

@@ -7,80 +7,80 @@ import { MetaStore } from './meta-store';
 import { ClipletItem } from './types';
 
 export class ClipletServiceIdb {
-	private static _instance: ClipletServiceIdb | null = null;
-	private _db: IDBPDatabase<ClipletDBSchema> | null = null;
-	private _store: ClipletStoreIdb;
+  private static _instance: ClipletServiceIdb | null = null;
+  private _db: IDBPDatabase<ClipletDBSchema> | null = null;
+  private _store: ClipletStoreIdb;
 
-	private constructor(private _appId: string) {}
+  private constructor(private _appId: string) {}
 
-	static async init(appId: string): Promise<ClipletServiceIdb> {
-		if (!this._instance) {			
-			this._instance = new ClipletServiceIdb(appId);
-			this._instance._db = await getDbPromise(appId);
-			const basePassword = appId;
-			const metaStore = new MetaStore(this._instance._db);
-			const seed = metaStore.getOrCreateSeed(basePassword);
-			const aesKey = await crypto.deriveKey(basePassword + seed, crypto.salt2);
-			this._instance._store = new ClipletStoreIdb(this._instance._db, aesKey);
-		}
-		return this._instance;
-	}
+  static async init(appId: string): Promise<ClipletServiceIdb> {
+    if (!this._instance) {
+      this._instance = new ClipletServiceIdb(appId);
+      this._instance._db = await getDbPromise(appId);
+      const basePassword = appId;
+      const metaStore = new MetaStore(this._instance._db);
+      const seed = metaStore.getOrCreateSeed(basePassword);
+      const aesKey = await crypto.deriveKey(basePassword + seed, crypto.salt2);
+      this._instance._store = new ClipletStoreIdb(this._instance._db, aesKey);
+    }
+    return this._instance;
+  }
 
-	static get instance(): ClipletServiceIdb {
-		if (this._instance) { 
-			return this._instance;
-		} else {
-			throw new Error('ClipletServiceIdb has not been initialized. Call init() first.');
-		}
-	}
+  static get instance(): ClipletServiceIdb {
+    if (this._instance) {
+      return this._instance;
+    } else {
+      throw new Error('ClipletServiceIdb has not been initialized. Call init() first.');
+    }
+  }
 
-	destroy(): void {
-		this.closeDB();
-		ClipletServiceIdb._instance = null;
-	}
+  destroy(): void {
+    this.closeDB();
+    ClipletServiceIdb._instance = null;
+  }
 
-	hasDB(): boolean { 
-		return !!this._db;
-	}
+  hasDB(): boolean {
+    return !!this._db;
+  }
 
-	closeDB(): void {
-		this._db?.close();
-	}
+  closeDB(): void {
+    this._db?.close();
+  }
 
-	async deleteDB(): Promise<void> {
-		await deleteDB(this._db?.name || '');
-		this._db = null;
-	}
+  async deleteDB(): Promise<void> {
+    await deleteDB(this._db?.name || '');
+    this._db = null;
+  }
 
-	async getCliplet(id: string): Promise<ClipletItem | undefined> {
-		return this._store.get(id);
-	}
+  async getCliplet(id: string): Promise<ClipletItem | undefined> {
+    return this._store.get(id);
+  }
 
-	async getAllCliplets(): Promise<ClipletItem[]> {
-		return await this._store.list();
-	}
+  async getAllCliplets(): Promise<ClipletItem[]> {
+    return await this._store.list();
+  }
 
-	async addCliplet(value: ClipletItem): Promise<string> {
-		return this._store.add(value);
-	}
+  async addCliplet(value: ClipletItem): Promise<string> {
+    return this._store.add(value);
+  }
 
-	async putCliplet(value: ClipletItem): Promise<void> {
-		return this._store.put(value);
-	}
+  async putCliplet(value: ClipletItem): Promise<void> {
+    return this._store.put(value);
+  }
 
-	async deleteCliplet(id: string): Promise<void> {
-		return this._store.delete(id);
-	}
+  async deleteCliplet(id: string): Promise<void> {
+    return this._store.delete(id);
+  }
 
-	async deleteAllCliplets(): Promise<void> {
-		return this._store.deleteAll();
-	}
+  async deleteAllCliplets(): Promise<void> {
+    return this._store.deleteAll();
+  }
 
-	async deleteExceededRecords(maxCount: number): Promise<void> {
-		return this._store.deleteExceededRecords(maxCount);
-	}
+  async deleteExceededRecords(maxCount: number): Promise<void> {
+    return this._store.deleteExceededRecords(maxCount);
+  }
 
-	async deleteOverdueRecords(days: number): Promise<void> {
-		return this._store.deleteOverdueRecords(days);
-	}
+  async deleteOverdueRecords(days: number): Promise<void> {
+    return this._store.deleteOverdueRecords(days);
+  }
 }

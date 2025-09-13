@@ -59,7 +59,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
     }
   }
 
-  onClose() {
+  onClose(): void {
     window.removeEventListener('keydown', this._eventListenerFn);
   }
 

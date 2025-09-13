@@ -20,7 +20,7 @@ export default class Cliplet extends Plugin {
     return this._settings;
   }
 
-  async onload() {
+  async onload(): Promise<void> {
     await this.loadSettings();
 
     this.addCommand({

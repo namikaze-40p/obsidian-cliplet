@@ -11,7 +11,7 @@ export class ClipletConfirmModal extends Modal {
     super(app);
   }
 
-  onOpen() {
+  onOpen(): void {
     this.modalEl.addClasses(['cliplet-confirm-modal', 'cc-modal']);
 
     this.contentEl.createDiv('', (el) => {
@@ -36,7 +36,7 @@ export class ClipletConfirmModal extends Modal {
     });
   }
 
-  onClose() {
+  onClose(): void {
     if (this._resolveClose) {
       this._resolveClose();
     }

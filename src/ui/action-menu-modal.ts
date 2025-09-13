@@ -20,7 +20,7 @@ export class ActionMenuModal extends FuzzySuggestModal<ActionMenuItem> {
     window.addEventListener('keydown', this._eventListenerFn);
   }
 
-  onClose() {
+  onClose(): void {
     window.removeEventListener('keydown', this._eventListenerFn);
     if (this._resolveClose) {
       this._resolveClose();

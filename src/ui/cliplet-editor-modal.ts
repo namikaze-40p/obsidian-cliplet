@@ -34,7 +34,7 @@ export class ClipletEditorModal extends Modal {
     window.addEventListener('keydown', this._eventListenerFn);
   }
 
-  onOpen() {
+  onOpen(): void {
     this.modalEl.addClasses(['cliplet-editor-modal', 'ce-modal']);
 
     new Setting(this.contentEl)
@@ -74,7 +74,7 @@ export class ClipletEditorModal extends Modal {
     });
   }
 
-  onClose() {
+  onClose(): void {
     window.removeEventListener('keydown', this._eventListenerFn);
     if (this._resolveClose) {
       this._resolveClose();

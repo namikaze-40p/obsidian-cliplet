@@ -4,7 +4,7 @@ This is an [Obsidian](https://obsidian.md/) plugin that a clipboard and snippet 
 
 ## Concept
 
-Cliplet provides both a dedicated clipboard and a snippet manager inside Obsidian. Its storage is fully independent from the OS clipboard, allowing you to store and reuse text, code, and other snippets without disrupting your workflow.
+Cliplet is designed to keep your snippets always at hand inside Obsidian. With its separate clipboard, you can capture ideas, reuse text or code, and speed up your writing—without ever overwriting your system clipboard. Cliplet also provides a clipboard history experience across devices. On mobile, this is especially valuable, since clipboard management options are more limited compared to desktop.
 
 ## Storage Options
 

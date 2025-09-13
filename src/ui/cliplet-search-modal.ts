@@ -26,6 +26,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
   private _actionMenuModal: ActionMenuModal | null = null;
   private _editorModal: ClipletEditorModal | null = null;
   private _confirmModal: ClipletConfirmModal | null = null;
+  private lastTappedClipletId: string = '';
 
   constructor(
     app: App,
@@ -78,6 +79,24 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
     await this._plugin.saveSettings();
   }
 
+  onChooseSuggestion(item: FuzzyMatch<ClipletItem>, evt: MouseEvent | KeyboardEvent): void {
+    const cliplet = item.item;
+    const type = evt instanceof PointerEvent ? evt.pointerType : evt.type;
+
+    if (!['touch', 'pen'].includes(type)) {
+      this.onChooseItem(cliplet);
+      this.lastTappedClipletId = '';
+      return;
+    }
+
+    if (this.lastTappedClipletId === cliplet.id) {
+      this.onChooseItem(cliplet);
+      this.lastTappedClipletId = '';
+    } else {
+      this.lastTappedClipletId = cliplet.id;
+    }
+  }
+
   renderSuggestion(item: FuzzyMatch<ClipletItem>, suggestionItemEl: HTMLElement): HTMLElement {
     const cliplet = item.item;
     const texts = cliplet.content.split(/\r?\n/);
@@ -97,6 +116,16 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
 
     frag.append(iconWrap, textSpan);
     suggestionItemEl.replaceChildren(frag);
+
+    suggestionItemEl.addEventListener('click', (evt: PointerEvent | KeyboardEvent) => {
+      const type = evt instanceof PointerEvent ? evt.pointerType : evt.type;
+      if (['touch', 'pen'].includes(type) && cliplet.id !== this.lastTappedClipletId) {
+        const close = this.close.bind(this);
+        this.close = () => {};
+        setTimeout(() => (this.close = close), 1000);
+      }
+    });
+
     return suggestionItemEl;
   }
 

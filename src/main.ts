@@ -108,7 +108,7 @@ export default class Cliplet extends Plugin {
     if (!cliplet) {
       return;
     }
-    const pastedCliplet = await pasteCliplet(editor, cliplet);
+    const pastedCliplet = pasteCliplet(editor, cliplet);
     await this._service.putCliplet(pastedCliplet);
   }
 

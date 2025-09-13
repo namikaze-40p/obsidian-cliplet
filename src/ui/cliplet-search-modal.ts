@@ -72,7 +72,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
   }
 
   async onChooseItem(cliplet: ClipletItem): Promise<void> {
-    const pastedCliplet = await pasteCliplet(this._editor, cliplet);
+    const pastedCliplet = pasteCliplet(this._editor, cliplet);
     await this._service.putCliplet(pastedCliplet);
     this._plugin.settings.latestClipletId = pastedCliplet.id;
     await this._plugin.saveSettings();

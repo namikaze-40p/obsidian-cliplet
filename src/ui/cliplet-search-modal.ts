@@ -182,12 +182,16 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
       lastModified.textContent = lastModifiedText;
       created.textContent = dayjs.unix(cliplet.created).format('MMM D, YYYY [at] HH:mm:ss');
 
-      lastUsedText
-        ? lastUsed.parentElement?.removeClass('is-hidden')
-        : lastUsed.parentElement?.addClass('is-hidden');
-      lastModifiedText
-        ? lastModified.parentElement?.removeClass('is-hidden')
-        : lastModified.parentElement?.addClass('is-hidden');
+      if (lastUsedText) {
+        lastUsed.parentElement?.removeClass('is-hidden');
+      } else {
+        lastUsed.parentElement?.addClass('is-hidden');
+      }
+      if (lastModifiedText) {
+        lastModified.parentElement?.removeClass('is-hidden');
+      } else {
+        lastModified.parentElement?.addClass('is-hidden');
+      }
     } else {
       content.empty();
       count.empty();

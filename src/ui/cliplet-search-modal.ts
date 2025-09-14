@@ -26,6 +26,8 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
   private _actionMenuModal: ActionMenuModal | null = null;
   private _editorModal: ClipletEditorModal | null = null;
   private _confirmModal: ClipletConfirmModal | null = null;
+  private _lastTappedClipletId: string = '';
+  private readonly _close: () => void = this.close.bind(this);
 
   constructor(
     app: App,
@@ -51,6 +53,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
 
     await this.getCliplets();
     if (this._cliplets.length) {
+      this._lastTappedClipletId = this._cliplets[0].id;
       this.updateDetailView(this._cliplets[0]);
     }
     const suggestionContainer = this.containerEl.querySelector('.prompt-results');
@@ -76,6 +79,25 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
     await this._service.putCliplet(pastedCliplet);
     this._plugin.settings.latestClipletId = pastedCliplet.id;
     await this._plugin.saveSettings();
+    this._lastTappedClipletId = '';
+  }
+
+  onChooseSuggestion(item: FuzzyMatch<ClipletItem>, ev: MouseEvent | KeyboardEvent): void {
+    const cliplet = item.item;
+
+    // Case: KeyboardEvent(Enter key) or Mouse click
+    if ((ev instanceof KeyboardEvent && ev.code === 'Enter') || !this._lastTappedClipletId) {
+      this.onChooseItem(cliplet);
+      return;
+    }
+
+    // Case: Touch or Pen input
+    if (this._lastTappedClipletId === cliplet.id) {
+      this.onChooseItem(cliplet);
+    } else {
+      this._lastTappedClipletId = cliplet.id;
+      this.close = this._close;
+    }
   }
 
   renderSuggestion(item: FuzzyMatch<ClipletItem>, suggestionItemEl: HTMLElement): HTMLElement {
@@ -128,15 +150,17 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
     const observer = this.generateObserver();
     const observeItems = () => {
       const items = suggestionContainer.querySelectorAll('.suggestion-item');
-      items.forEach((item) =>
-        observer.observe(item, { attributes: true, attributeFilter: ['class'] }),
-      );
+      items.forEach((item) => {
+        this.attachPointerHandler(item);
+        return observer.observe(item, { attributes: true, attributeFilter: ['class'] });
+      });
     };
 
     observeItems();
 
     this.inputEl.addEventListener('input', () => {
       const cliplet = this.findClipletItem(suggestionContainer.firstChild?.lastChild);
+      this._lastTappedClipletId = cliplet?.id || '';
       this.updateDetailView(cliplet || null);
       setTimeout(observeItems, 0);
     });
@@ -160,6 +184,25 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
       return;
     }
     return this._cliplets.find((item) => item.id === (el as HTMLSpanElement).dataset.clipletId);
+  }
+
+  private attachPointerHandler(item: Element): void {
+    item.addEventListener('pointerup', (ev: PointerEvent) => {
+      if (!['touch', 'pen'].includes(ev.pointerType)) {
+        this._lastTappedClipletId = '';
+        return;
+      }
+
+      const cliplet = this.findClipletItem(item.lastChild);
+      if (!cliplet) {
+        return;
+      }
+
+      if (!['BEFORE_SET', cliplet.id].includes(this._lastTappedClipletId)) {
+        this._lastTappedClipletId = 'BEFORE_SET';
+        this.close = () => {};
+      }
+    });
   }
 
   private updateDetailView(cliplet: ClipletItem | null): void {
@@ -193,6 +236,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
         lastModified.parentElement?.addClass('is-hidden');
       }
     } else {
+      this._lastTappedClipletId = '';
       content.empty();
       count.empty();
       lastUsed.empty();

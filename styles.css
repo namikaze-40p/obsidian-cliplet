@@ -23,7 +23,6 @@
   width: 80vw;
   max-width: 850px;
   height: max-content !important;
-  max-height: 486px !important;
 
   .prompt-input-container {
     grid-area: input;

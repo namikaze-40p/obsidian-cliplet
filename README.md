@@ -4,7 +4,17 @@ This is an [Obsidian](https://obsidian.md/) plugin that a clipboard and snippet 
 
 ## Concept
 
-Cliplet is designed to keep your snippets always at hand inside Obsidian. With its separate clipboard, you can capture ideas, reuse text or code, and speed up your writing—without ever overwriting your system clipboard. Cliplet also provides a clipboard history experience across devices. On mobile, this is especially valuable, since clipboard management options are more limited compared to desktop.
+Cliplet is designed to keep your snippets always at hand inside Obsidian. With its separate clipboard, you can capture ideas, reuse text or code, and speed up your writing—without ever overwriting your system clipboard.
+
+Cliplet also provides a Cliplet history inside Obsidian. With the data.json option, your snippets stay with your vault and sync across devices.
+
+## Why Cliplet?
+
+- Keep multiple snippets without overwriting your system clipboard.
+- Keep work and personal snippets separate from your OS clipboard.
+- Mobile-friendly: browse and paste snippets where clipboard managers are limited.
+
+![demo](https://raw.githubusercontent.com/namikaze-40p/obsidian-cliplet/main/demo/diff-to-os.gif)
 
 ## Storage Options
 
@@ -36,7 +46,9 @@ This allows you to add, paste, and search cliplets quickly without leaving the k
 1. Paste the latest cliplet: Run the “Paste latest cliplet” command.
 1. Search cliplets: Run the “Search cliplet” command to find, then paste or edit the desired cliplet.
 
-![demo](https://raw.githubusercontent.com/namikaze-40p/obsidian-cliplet/main/demo/cliplet.gif)
+![demo](https://raw.githubusercontent.com/namikaze-40p/obsidian-cliplet/main/demo/add-and-paste.gif)
+
+![demo](https://raw.githubusercontent.com/namikaze-40p/obsidian-cliplet/main/demo/search.gif)
 
 ## Installation
 

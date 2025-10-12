@@ -2,7 +2,7 @@ import { App, Editor, FuzzyMatch, FuzzySuggestModal, Notice, setIcon } from 'obs
 import dayjs from 'dayjs';
 
 import Cliplet from '../main';
-import { ActionMenuItem, ClipletItem } from '../core/types';
+import { ActionMenuItem, DecryptedClipletItem } from '../core/types';
 import { createStyles, deleteStyles, pasteCliplet } from '../utils';
 import { ActionMenuModal } from './action-menu-modal';
 import { ACTION_MENU_ITEMS, IS_APPLE, KEYS } from '../core/consts';
@@ -10,10 +10,10 @@ import { ClipletConfirmModal } from './cliplet-confirm-modal';
 import { ClipletEditorModal } from './cliplet-editor-modal';
 import { ClipletService } from 'src/core/cliplet-service';
 
-export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
+export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> {
   private _service: ClipletService;
-  private _cliplets: ClipletItem[] = [];
-  private _currentCliplet: ClipletItem | null = null;
+  private _cliplets: DecryptedClipletItem[] = [];
+  private _currentCliplet: DecryptedClipletItem | null = null;
   private _detailEls: { [key: string]: HTMLSpanElement | null } = {
     content: null,
     count: null,
@@ -66,15 +66,15 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
     window.removeEventListener('keydown', this._eventListenerFn);
   }
 
-  getItems(): ClipletItem[] {
+  getItems(): DecryptedClipletItem[] {
     return this._cliplets;
   }
 
-  getItemText(cliplet: ClipletItem): string {
-    return [cliplet.name, cliplet.content].join(' ');
+  getItemText(cliplet: DecryptedClipletItem): string {
+    return [cliplet.name, cliplet.decryptedContent].join(' ');
   }
 
-  async onChooseItem(cliplet: ClipletItem): Promise<void> {
+  async onChooseItem(cliplet: DecryptedClipletItem): Promise<void> {
     const pastedCliplet = pasteCliplet(this._editor, cliplet);
     await this._service.putCliplet(pastedCliplet);
     this._plugin.settings.latestClipletId = pastedCliplet.id;
@@ -82,7 +82,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
     this._lastTappedClipletId = '';
   }
 
-  onChooseSuggestion(item: FuzzyMatch<ClipletItem>, ev: MouseEvent | KeyboardEvent): void {
+  onChooseSuggestion(item: FuzzyMatch<DecryptedClipletItem>, ev: MouseEvent | KeyboardEvent): void {
     const cliplet = item.item;
 
     // Case: KeyboardEvent(Enter key) or Mouse click
@@ -100,10 +100,13 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
     }
   }
 
-  renderSuggestion(item: FuzzyMatch<ClipletItem>, suggestionItemEl: HTMLElement): HTMLElement {
+  renderSuggestion(
+    item: FuzzyMatch<DecryptedClipletItem>,
+    suggestionItemEl: HTMLElement,
+  ): HTMLElement {
     const cliplet = item.item;
-    const texts = cliplet.content.split(/\r?\n/);
-    const viewText = texts.length === 1 ? cliplet.content : `${texts[0]}...`;
+    const texts = cliplet.decryptedContent.split(/\r?\n/);
+    const viewText = texts.length === 1 ? cliplet.decryptedContent : `${texts[0]}...`;
     const icon = cliplet.pinned ? 'pin' : cliplet.name ? 'tag' : 'clipboard';
 
     const doc = suggestionItemEl.ownerDocument;
@@ -123,7 +126,13 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
   }
 
   private async getCliplets(): Promise<void> {
-    this._cliplets = await this._service.getAllCliplets();
+    const cliplets = await this._service.getAllCliplets();
+    this._cliplets = await Promise.all(
+      cliplets.map(async (cliplet: DecryptedClipletItem) => {
+        cliplet.decryptedContent = await this._service.decrypt(cliplet.content);
+        return cliplet;
+      }),
+    );
     this.inputEl.dispatchEvent(new Event('input'));
   }
 
@@ -158,7 +167,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
 
     observeItems();
 
-    this.inputEl.addEventListener('input', () => {
+    this.inputEl.addEventListener('input', async () => {
       const cliplet = this.findClipletItem(suggestionContainer.firstChild?.lastChild);
       this._lastTappedClipletId = cliplet?.id || '';
       this.updateDetailView(cliplet || null);
@@ -167,7 +176,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
   }
 
   private generateObserver(): MutationObserver {
-    return new MutationObserver((mutations: MutationRecord[]) => {
+    return new MutationObserver(async (mutations: MutationRecord[]) => {
       for (const { type, attributeName, target } of mutations) {
         if (type === 'attributes' && attributeName === 'class') {
           const cliplet = this.findClipletItem(target.lastChild);
@@ -179,7 +188,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
     });
   }
 
-  private findClipletItem(el: ChildNode | null | undefined): ClipletItem | undefined {
+  private findClipletItem(el: ChildNode | null | undefined): DecryptedClipletItem | undefined {
     if (el?.nodeName !== 'SPAN') {
       return;
     }
@@ -205,7 +214,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
     });
   }
 
-  private updateDetailView(cliplet: ClipletItem | null): void {
+  private updateDetailView(cliplet: DecryptedClipletItem | null): void {
     this._currentCliplet = cliplet;
     const { content, count, lastUsed, lastModified, created } = this._detailEls;
     if (!content || !count || !lastUsed || !lastModified || !created) {
@@ -219,7 +228,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
         ? dayjs.unix(cliplet.lastModified).format('MMM D, YYYY [at] HH:mm:ss')
         : '';
 
-      content.textContent = cliplet.content;
+      content.textContent = cliplet.decryptedContent;
       count.textContent = `${cliplet.count}`;
       lastUsed.textContent = lastUsedText;
       lastModified.textContent = lastModifiedText;
@@ -451,7 +460,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<ClipletItem> {
     }
   }
 
-  private getFilteredCliplets(): ClipletItem[] {
+  private getFilteredCliplets(): DecryptedClipletItem[] {
     const query = this.inputEl.value || '';
     return this.getSuggestions(query).map(({ item }) => item);
   }

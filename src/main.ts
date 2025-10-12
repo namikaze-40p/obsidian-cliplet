@@ -83,7 +83,7 @@ export default class Cliplet extends Plugin {
     const cliplet = {
       id,
       name: '',
-      content,
+      content: await this._service.encrypt(content),
       type: 'text',
       keyword: '',
       pinned: 0,
@@ -108,7 +108,8 @@ export default class Cliplet extends Plugin {
     if (!cliplet) {
       return;
     }
-    const pastedCliplet = pasteCliplet(editor, cliplet);
+    const decryptedContent = await this._service.decrypt(cliplet.content);
+    const pastedCliplet = pasteCliplet(editor, { ...cliplet, decryptedContent });
     await this._service.putCliplet(pastedCliplet);
   }
 

@@ -2,7 +2,7 @@ import { App, Modal, Notice, Setting } from 'obsidian';
 import dayjs from 'dayjs';
 import { v4 as uuid } from 'uuid';
 
-import { ClipletItem } from '../core/types';
+import { ClipletItem, DecryptedClipletItem } from '../core/types';
 import { IS_APPLE, KEYS } from '../core/consts';
 import Cliplet from '../main';
 import { ClipletService } from 'src/core/cliplet-service';
@@ -19,16 +19,11 @@ export class ClipletEditorModal extends Modal {
   constructor(
     app: App,
     private _plugin: Cliplet,
-    private _cliplet?: ClipletItem | null,
+    private _cliplet?: DecryptedClipletItem | null,
   ) {
     super(app);
     this._service = ClipletService.instance;
     this._cliplet = _cliplet ? structuredClone(_cliplet) : null;
-
-    if (this._cliplet) {
-      this._form.name = this._cliplet.name || '';
-      this._form.content = this._cliplet.content || '';
-    }
 
     this._eventListenerFn = this.handlingKeydownEvent.bind(this);
     window.addEventListener('keydown', this._eventListenerFn);
@@ -37,13 +32,18 @@ export class ClipletEditorModal extends Modal {
   onOpen(): void {
     this.modalEl.addClasses(['cliplet-editor-modal', 'ce-modal']);
 
+    if (this._cliplet) {
+      this._form.name = this._cliplet.name || '';
+      this._form.content = this._cliplet.decryptedContent;
+    }
+
     new Setting(this.contentEl)
       .setName('Name (optional)')
       .setDesc('Cliplets with names won’t be deleted automatically.')
       .addText((name) =>
         name
           .setPlaceholder('Enter name')
-          .setValue(this._cliplet?.name || '')
+          .setValue(this._form.name)
           .onChange((value) => {
             this._form.name = value;
           }),
@@ -55,7 +55,7 @@ export class ClipletEditorModal extends Modal {
       .addTextArea((content) =>
         content
           .setPlaceholder('Enter content')
-          .setValue(this._cliplet?.content || '')
+          .setValue(this._form.content)
           .onChange((value) => {
             this._form.content = value;
           }),
@@ -99,7 +99,7 @@ export class ClipletEditorModal extends Modal {
     const cliplet: ClipletItem = {
       id: this._cliplet ? this._cliplet.id : uuid(),
       name,
-      content,
+      content: await this._service.encrypt(content),
       keyword: this._cliplet ? this._cliplet.keyword : '',
       type: this._cliplet ? this._cliplet.type : 'text',
       pinned: this._cliplet ? this._cliplet.pinned : 0,

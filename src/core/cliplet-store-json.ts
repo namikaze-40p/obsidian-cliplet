@@ -1,6 +1,5 @@
 import dayjs from 'dayjs';
 
-import crypto from './crypto';
 import Cliplet from 'src/main';
 import { ClipletItem } from './types';
 
@@ -24,29 +23,16 @@ export class ClipletStoreJson {
     return this._plugin.settings.cliplets;
   }
 
-  constructor(
-    private _plugin: Cliplet,
-    private _aesKey: CryptoKey,
-  ) {
+  constructor(private _plugin: Cliplet) {
     this._clipletMap = new Map(this._cliplets.map((cliplet) => [cliplet.id, cliplet]));
   }
 
   async get(id: string): Promise<ClipletItem | undefined> {
-    const cliplet = this._clipletMap.get(id);
-    if (cliplet) {
-      cliplet.content = await crypto.decryptData(cliplet.content, this._aesKey);
-    }
-    return cliplet;
+    return this._clipletMap.get(id);
   }
 
   async list(): Promise<ClipletItem[]> {
-    const cliplets = structuredClone(this._cliplets) as ClipletItem[];
-    return await Promise.all(
-      cliplets.map(async (cliplet) => {
-        cliplet.content = await crypto.decryptData(cliplet.content, this._aesKey);
-        return cliplet;
-      }),
-    );
+    return structuredClone(this._cliplets) as ClipletItem[];
   }
 
   async add(value: ClipletItem): Promise<string> {
@@ -54,11 +40,9 @@ export class ClipletStoreJson {
     if (existClipletId) {
       return existClipletId;
     } else {
-      const encryptContent = await crypto.encryptData(value.content, this._aesKey);
-      const cliplet = { ...value, content: encryptContent };
-      this._plugin.settings.cliplets.push(cliplet);
+      this._plugin.settings.cliplets.push(value);
       await this._plugin.saveSettings();
-      this._clipletMap.set(cliplet.id, cliplet);
+      this._clipletMap.set(value.id, value);
       return value.id;
     }
   }
@@ -66,8 +50,7 @@ export class ClipletStoreJson {
   async put(value: ClipletItem): Promise<void> {
     const cliplet = this._clipletMap.get(value.id);
     if (cliplet) {
-      const content = await crypto.encryptData(value.content, this._aesKey);
-      const { name, count, pinned, lastUsed, lastModified } = value;
+      const { content, name, count, pinned, lastUsed, lastModified } = value;
       const updateProps = { content, name, count, pinned, lastUsed, lastModified };
       setProps(cliplet, updateProps);
       await this._plugin.saveSettings();

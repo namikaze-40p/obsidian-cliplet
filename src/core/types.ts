@@ -17,6 +17,10 @@ export interface ClipletItem {
   lastModified: number;
 }
 
+// Represents a ClipletItem that has been decrypted.
+// Both encrypted and decrypted contents are available.
+export type DecryptedClipletItem = ClipletItem & { decryptedContent: string };
+
 export interface MetaItem {
   key: string;
   value: string;

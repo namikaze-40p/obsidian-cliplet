@@ -79,6 +79,14 @@ export class ClipletService {
     await this._service.deleteDB();
   }
 
+  async decrypt(value: string): Promise<string> {
+    return this._service.decrypt(value);
+  }
+
+  async encrypt(value: string): Promise<string> {
+    return this._service.encrypt(value);
+  }
+
   async getCliplet(id: string): Promise<ClipletItem | undefined> {
     return this._service.getCliplet(id);
   }

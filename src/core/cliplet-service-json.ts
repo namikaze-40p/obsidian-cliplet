@@ -11,18 +11,20 @@ export class ClipletServiceJson {
   private static _instance: ClipletServiceJson | null = null;
   private _db: IDBPDatabase<ClipletDBSchema> | null = null;
   private _store: ClipletStoreJson;
+  private _aesKey: CryptoKey;
 
-  private constructor(private _appId: string) {}
+  // Singleton: prevent direct instantiation. Use init() + instance.
+  private constructor() {}
 
   static async init(appId: string, plugin: Cliplet): Promise<ClipletServiceJson> {
     if (!this._instance) {
-      this._instance = new ClipletServiceJson(appId);
+      this._instance = new ClipletServiceJson();
       this._instance._db = await getDbPromise(appId);
       const basePassword = appId;
       const metaStore = new MetaStore(this._instance._db);
       const seed = metaStore.getOrCreateSeed(basePassword);
-      const aesKey = await crypto.deriveKey(basePassword + seed, crypto.salt2);
-      this._instance._store = new ClipletStoreJson(plugin, aesKey);
+      this._instance._aesKey = await crypto.deriveKey(basePassword + seed, crypto.salt2);
+      this._instance._store = new ClipletStoreJson(plugin);
     }
     return this._instance;
   }
@@ -51,6 +53,14 @@ export class ClipletServiceJson {
   async deleteDB(): Promise<void> {
     await deleteDB(this._db?.name || '');
     this._db = null;
+  }
+
+  async decrypt(value: string): Promise<string> {
+    return await crypto.decryptData(value, this._aesKey);
+  }
+
+  async encrypt(value: string): Promise<string> {
+    return await crypto.encryptData(value, this._aesKey);
   }
 
   async getCliplet(id: string): Promise<ClipletItem | undefined> {

@@ -10,18 +10,20 @@ export class ClipletServiceIdb {
   private static _instance: ClipletServiceIdb | null = null;
   private _db: IDBPDatabase<ClipletDBSchema> | null = null;
   private _store: ClipletStoreIdb;
+  private _aesKey: CryptoKey;
 
-  private constructor(private _appId: string) {}
+  // Singleton: prevent direct instantiation. Use init() + instance.
+  private constructor() {}
 
   static async init(appId: string): Promise<ClipletServiceIdb> {
     if (!this._instance) {
-      this._instance = new ClipletServiceIdb(appId);
+      this._instance = new ClipletServiceIdb();
       this._instance._db = await getDbPromise(appId);
       const basePassword = appId;
       const metaStore = new MetaStore(this._instance._db);
       const seed = metaStore.getOrCreateSeed(basePassword);
-      const aesKey = await crypto.deriveKey(basePassword + seed, crypto.salt2);
-      this._instance._store = new ClipletStoreIdb(this._instance._db, aesKey);
+      this._instance._aesKey = await crypto.deriveKey(basePassword + seed, crypto.salt2);
+      this._instance._store = new ClipletStoreIdb(this._instance._db);
     }
     return this._instance;
   }
@@ -50,6 +52,14 @@ export class ClipletServiceIdb {
   async deleteDB(): Promise<void> {
     await deleteDB(this._db?.name || '');
     this._db = null;
+  }
+
+  async decrypt(value: string): Promise<string> {
+    return await crypto.decryptData(value, this._aesKey);
+  }
+
+  async encrypt(value: string): Promise<string> {
+    return await crypto.encryptData(value, this._aesKey);
   }
 
   async getCliplet(id: string): Promise<ClipletItem | undefined> {

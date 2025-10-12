@@ -1,7 +1,6 @@
 import { IDBPDatabase } from 'idb';
 import dayjs from 'dayjs';
 
-import crypto from './crypto';
 import { ClipletItem } from './types';
 import { ClipletDBSchema } from './database';
 
@@ -10,29 +9,14 @@ const STORE_NAME = 'cliplet';
 export class ClipletStoreIdb {
   private readonly _version = 1;
 
-  constructor(
-    private _db: IDBPDatabase<ClipletDBSchema>,
-    private _aesKey: CryptoKey,
-  ) {}
+  constructor(private _db: IDBPDatabase<ClipletDBSchema>) {}
 
   async get(id: string): Promise<ClipletItem | undefined> {
-    return await this._db.get(STORE_NAME, id).then(async (cliplet) => {
-      if (cliplet) {
-        cliplet.content = await crypto.decryptData(cliplet.content, this._aesKey);
-      }
-      return cliplet;
-    });
+    return await this._db.get(STORE_NAME, id);
   }
 
   async list(): Promise<ClipletItem[]> {
-    return await this._db.getAll(STORE_NAME).then((cliplets) => {
-      return Promise.all(
-        cliplets.map(async (cliplet) => {
-          cliplet.content = await crypto.decryptData(cliplet.content, this._aesKey);
-          return cliplet;
-        }),
-      );
-    });
+    return await this._db.getAll(STORE_NAME);
   }
 
   async add(value: ClipletItem): Promise<string> {
@@ -40,15 +24,13 @@ export class ClipletStoreIdb {
     if (existClipletId) {
       return existClipletId;
     } else {
-      const encryptContent = await crypto.encryptData(value.content, this._aesKey);
-      await this._db.add(STORE_NAME, { ...value, content: encryptContent });
+      await this._db.add(STORE_NAME, value);
       return value.id;
     }
   }
 
   async put(value: ClipletItem): Promise<void> {
-    const encryptContent = await crypto.encryptData(value.content, this._aesKey);
-    await this._db.put(STORE_NAME, { ...value, content: encryptContent });
+    await this._db.put(STORE_NAME, value);
   }
 
   async delete(id: string): Promise<void> {

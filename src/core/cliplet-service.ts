@@ -16,113 +16,93 @@ const compare = (a: ClipletItem, b: ClipletItem): number => {
 };
 
 export class ClipletService {
-  private static _instance: ClipletService | null = null;
-  private _service!: IClipletServiceBackend;
+  private _backend!: IClipletServiceBackend;
 
-  private get storageType(): StorageType {
-    return this._plugin.settings.storageType;
-  }
-
-  private constructor(
-    private _appId: string,
-    private _plugin: Cliplet,
+  constructor(
+    private readonly appId: string,
+    private readonly plugin: Cliplet,
+    private storageType: StorageType,
   ) {}
 
-  static async init(appId: string, plugin: Cliplet): Promise<ClipletService> {
-    if (!this._instance) {
-      const service = new ClipletService(appId, plugin);
-      service._service = await service.createBackend(service.storageType);
-      this._instance = service;
-    }
-    return this._instance!;
+  async init(): Promise<void> {
+    this._backend = await this.createBackend(this.storageType);
   }
 
-  static get instance(): ClipletService {
-    if (!this._instance) {
-      throw new Error('ClipletService has not been initialized. Call init() first.');
-    }
-    return this._instance;
+  private async createBackend(kind: StorageType): Promise<IClipletServiceBackend> {
+    return kind === 'idb'
+      ? await ClipletServiceIdb.create(this.appId)
+      : await ClipletServiceJson.create(this.appId, this.plugin);
   }
 
-  private async createBackend(storageType: StorageType): Promise<IClipletServiceBackend> {
-    if (storageType === 'idb') {
-      await ClipletServiceIdb.init(this._appId);
-      return ClipletServiceIdb.instance;
-    } else {
-      await ClipletServiceJson.init(this._appId, this._plugin);
-      return ClipletServiceJson.instance;
+  async switchStorage(newType: StorageType): Promise<void> {
+    if (newType === this.storageType) {
+      return;
     }
-  }
 
-  async migrationStorageData(): Promise<void> {
-    await ClipletServiceIdb.init(this._appId);
-    await ClipletServiceJson.init(this._appId, this._plugin);
+    const next = await this.createBackend(newType);
 
-    const fromService: IClipletServiceBackend =
-      this.storageType === 'idb' ? ClipletServiceJson.instance : ClipletServiceIdb.instance;
-    const toService: IClipletServiceBackend =
-      this.storageType === 'idb' ? ClipletServiceIdb.instance : ClipletServiceJson.instance;
-
-    const cliplets = await fromService.getAllCliplets();
-    await toService.deleteAllCliplets();
-
+    const cliplets = await this._backend.getAllCliplets();
+    await next.deleteAllCliplets();
     for (const cliplet of cliplets) {
-      await toService.addCliplet(cliplet);
+      await next.addCliplet(cliplet);
     }
-    await fromService.deleteAllCliplets();
-    fromService.destroy();
-    this._service = toService;
+
+    await this._backend.deleteAllCliplets();
+    this._backend.destroy();
+
+    this._backend = next;
+    this.storageType = newType;
   }
 
   hasDB(): boolean {
-    return !!this._service.hasDB();
+    return !!this._backend.hasDB();
   }
 
   closeDB(): void {
-    this._service.closeDB();
+    this._backend.closeDB();
   }
 
   async deleteDB(): Promise<void> {
-    await this._service.deleteDB();
+    await this._backend.deleteDB();
   }
 
   async decrypt(value: string): Promise<string> {
-    return this._service.decrypt(value);
+    return this._backend.decrypt(value);
   }
 
   async encrypt(value: string): Promise<string> {
-    return this._service.encrypt(value);
+    return this._backend.encrypt(value);
   }
 
   async getCliplet(id: string): Promise<ClipletItem | undefined> {
-    return this._service.getCliplet(id);
+    return this._backend.getCliplet(id);
   }
 
   async getAllCliplets(): Promise<ClipletItem[]> {
-    return (await this._service.getAllCliplets()).sort(compare);
+    return (await this._backend.getAllCliplets()).sort(compare);
   }
 
   async addCliplet(value: ClipletItem): Promise<string> {
-    return this._service.addCliplet(value);
+    return this._backend.addCliplet(value);
   }
 
   async putCliplet(value: ClipletItem): Promise<void> {
-    return this._service.putCliplet(value);
+    return this._backend.putCliplet(value);
   }
 
   async deleteCliplet(id: string): Promise<void> {
-    return this._service.deleteCliplet(id);
+    return this._backend.deleteCliplet(id);
   }
 
   async deleteAllCliplets(): Promise<void> {
-    return this._service.deleteAllCliplets();
+    return this._backend.deleteAllCliplets();
   }
 
   async deleteExceededRecords(maxCount: number): Promise<void> {
-    return this._service.deleteExceededRecords(maxCount);
+    return this._backend.deleteExceededRecords(maxCount);
   }
 
   async deleteOverdueRecords(days: number): Promise<void> {
-    return this._service.deleteOverdueRecords(days);
+    return this._backend.deleteOverdueRecords(days);
   }
 }

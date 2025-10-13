@@ -7,54 +7,23 @@ import { MetaStore } from './meta-store';
 import { ClipletItem, IClipletServiceBackend } from './types';
 
 export class ClipletServiceIdb implements IClipletServiceBackend {
-  private static _instance: ClipletServiceIdb | null = null;
-  private static _ready: Promise<ClipletServiceIdb> | null = null;
+  private constructor(
+    private _db: IDBPDatabase<ClipletDBSchema> | null,
+    private _store: ClipletStoreIdb,
+    private _aesKey: CryptoKey,
+  ) {}
 
-  private _db: IDBPDatabase<ClipletDBSchema> | null = null;
-  private _store!: ClipletStoreIdb;
-  private _aesKey!: CryptoKey;
-
-  // Singleton: prevent direct instantiation. Use init() + instance.
-  private constructor() {}
-
-  static async init(appId: string): Promise<ClipletServiceIdb> {
-    if (this._instance) {
-      return this._instance;
-    }
-    if (this._ready) {
-      return this._ready;
-    }
-
-    this._ready = (async () => {
-      const service = new ClipletServiceIdb();
-      service._db = await getDbPromise(appId);
-
-      const basePassword = appId;
-      const metaStore = new MetaStore(service._db);
-      const seed = metaStore.getOrCreateSeed(basePassword);
-
-      service._aesKey = await crypto.deriveKey(basePassword + seed, crypto.salt2);
-      service._store = new ClipletStoreIdb(service._db);
-
-      this._instance = service;
-      this._ready = null;
-      return service;
-    })();
-
-    return this._ready;
-  }
-
-  static get instance(): ClipletServiceIdb {
-    if (!this._instance) {
-      throw new Error('ClipletServiceIdb has not been initialized. Call init() first.');
-    }
-    return this._instance;
+  static async create(appId: string): Promise<ClipletServiceIdb> {
+    const db = await getDbPromise(appId);
+    const meta = new MetaStore(db);
+    const seed = meta.getOrCreateSeed(appId);
+    const key = await crypto.deriveKey(appId + seed, crypto.salt2);
+    const store = new ClipletStoreIdb(db);
+    return new ClipletServiceIdb(db, store, key);
   }
 
   destroy(): void {
     this.closeDB();
-    ClipletServiceIdb._instance = null;
-    ClipletServiceIdb._ready = null;
   }
 
   hasDB(): boolean {

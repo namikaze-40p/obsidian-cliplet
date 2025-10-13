@@ -35,7 +35,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
     private _editor: Editor,
   ) {
     super(app);
-    this._service = ClipletService.instance;
+    this._service = _plugin.service;
 
     this._eventListenerFn = this.handlingKeydownEvent.bind(this);
     window.addEventListener('keydown', this._eventListenerFn);

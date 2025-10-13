@@ -20,6 +20,10 @@ export default class Cliplet extends Plugin {
     return this._settings;
   }
 
+  get service(): ClipletService {
+    return this._service;
+  }
+
   async onload(): Promise<void> {
     await this.loadSettings();
 
@@ -42,8 +46,9 @@ export default class Cliplet extends Plugin {
     });
 
     this.app.workspace.onLayoutReady(async () => {
-      await ClipletService.init((this.app as CustomApp).appId, this);
-      this._service = ClipletService.instance;
+      const storageType = this.settings.storageType;
+      this._service = new ClipletService((this.app as CustomApp).appId, this, storageType);
+      await this._service.init();
 
       this._settingTab = new SettingTab(this.app, this);
       this.addSettingTab(this._settingTab);

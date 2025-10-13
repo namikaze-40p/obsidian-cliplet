@@ -29,7 +29,7 @@ export class SettingTab extends PluginSettingTab {
     private _plugin: Cliplet,
   ) {
     super(_app, _plugin);
-    this._service = ClipletService.instance;
+    this._service = _plugin.service;
   }
 
   display(): void {
@@ -48,7 +48,7 @@ export class SettingTab extends PluginSettingTab {
           .onChange(async (value: StorageType) => {
             this._plugin.settings.storageType = value;
             await this._plugin.saveSettings();
-            await this._service.migrationStorageData();
+            await this._service.switchStorage(value);
           }),
       );
 

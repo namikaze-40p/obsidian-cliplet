@@ -22,7 +22,7 @@ export class ClipletEditorModal extends Modal {
     private _cliplet?: DecryptedClipletItem | null,
   ) {
     super(app);
-    this._service = ClipletService.instance;
+    this._service = _plugin.service;
     this._cliplet = _cliplet ? structuredClone(_cliplet) : null;
 
     this._eventListenerFn = this.handlingKeydownEvent.bind(this);

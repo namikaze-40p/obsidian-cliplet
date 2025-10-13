@@ -21,6 +21,8 @@ export interface IClipletServiceBackend {
   deleteAllCliplets(): Promise<void>;
   deleteExceededRecords(maxCount: number): Promise<void>;
   deleteOverdueRecords(days: number): Promise<void>;
+
+  migrateAllToNewKey(): Promise<void>;
 }
 
 export type StorageType = 'idb' | 'json';

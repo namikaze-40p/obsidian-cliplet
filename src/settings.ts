@@ -12,12 +12,14 @@ export interface Settings {
   storageType: StorageType;
   latestClipletId: string;
   cliplets: ClipletItem[];
+  version: string;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
   storageType: 'idb',
   latestClipletId: '',
   cliplets: [] as ClipletItem[],
+  version: '',
 } as const;
 
 export class SettingTab extends PluginSettingTab {

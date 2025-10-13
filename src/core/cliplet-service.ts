@@ -105,4 +105,8 @@ export class ClipletService {
   async deleteOverdueRecords(days: number): Promise<void> {
     return this._backend.deleteOverdueRecords(days);
   }
+
+  async migrateAllToNewKey(): Promise<void> {
+    return this._backend.migrateAllToNewKey();
+  }
 }

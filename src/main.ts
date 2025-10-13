@@ -49,6 +49,11 @@ export default class Cliplet extends Plugin {
       const storageType = this.settings.storageType;
       this._service = new ClipletService((this.app as CustomApp).appId, this, storageType);
       await this._service.init();
+      if (!this.settings.version) {
+        await this._service.migrateAllToNewKey();
+        this.settings.version = this.manifest.version;
+        await this.saveSettings();
+      }
 
       this._settingTab = new SettingTab(this.app, this);
       this.addSettingTab(this._settingTab);

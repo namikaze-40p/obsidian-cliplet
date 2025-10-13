@@ -2,14 +2,14 @@ import { App, ButtonComponent, PluginSettingTab, Setting } from 'obsidian';
 
 import Cliplet from './main';
 import { createStyles, deleteStyles } from './utils';
-import { ClipletItem } from './core/types';
+import { ClipletItem, StorageType } from './core/types';
 import { ClipletService } from './core/cliplet-service';
 
 export const DEFAULT_STORAGE_OPTIONS = { idb: 'IndexedDB', json: 'data.json' } as const;
 const DELETION_CONFIRMATION_TEXT = 'Delete';
 
 export interface Settings {
-  storageType: string;
+  storageType: StorageType;
   latestClipletId: string;
   cliplets: ClipletItem[];
 }
@@ -45,7 +45,7 @@ export class SettingTab extends PluginSettingTab {
         dropdown
           .addOptions(DEFAULT_STORAGE_OPTIONS)
           .setValue(this._plugin.settings.storageType || 'idb')
-          .onChange(async (value) => {
+          .onChange(async (value: StorageType) => {
             this._plugin.settings.storageType = value;
             await this._plugin.saveSettings();
             await this._service.migrationStorageData();

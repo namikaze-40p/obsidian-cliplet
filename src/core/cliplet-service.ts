@@ -1,5 +1,5 @@
 import Cliplet from 'src/main';
-import { ClipletItem } from './types';
+import { ClipletItem, IClipletServiceBackend, StorageType } from './types';
 import { ClipletServiceIdb } from './cliplet-service-idb';
 import { ClipletServiceJson } from './cliplet-service-json';
 
@@ -17,9 +17,9 @@ const compare = (a: ClipletItem, b: ClipletItem): number => {
 
 export class ClipletService {
   private static _instance: ClipletService | null = null;
-  private _service: ClipletServiceIdb | ClipletServiceJson;
+  private _service!: IClipletServiceBackend;
 
-  private get storageType(): string {
+  private get storageType(): StorageType {
     return this._plugin.settings.storageType;
   }
 
@@ -30,38 +30,45 @@ export class ClipletService {
 
   static async init(appId: string, plugin: Cliplet): Promise<ClipletService> {
     if (!this._instance) {
-      this._instance = new ClipletService(appId, plugin);
-      if (this._instance.storageType === 'idb') {
-        await ClipletServiceIdb.init(appId);
-        this._instance._service = ClipletServiceIdb.instance;
-      } else {
-        await ClipletServiceJson.init(appId, plugin);
-        this._instance._service = ClipletServiceJson.instance;
-      }
+      const service = new ClipletService(appId, plugin);
+      service._service = await service.createBackend(service.storageType);
+      this._instance = service;
+    }
+    return this._instance!;
+  }
+
+  static get instance(): ClipletService {
+    if (!this._instance) {
+      throw new Error('ClipletService has not been initialized. Call init() first.');
     }
     return this._instance;
   }
 
-  static get instance(): ClipletService {
-    if (this._instance) {
-      return this._instance;
+  private async createBackend(storageType: StorageType): Promise<IClipletServiceBackend> {
+    if (storageType === 'idb') {
+      await ClipletServiceIdb.init(this._appId);
+      return ClipletServiceIdb.instance;
     } else {
-      throw new Error('ClipletService has not been initialized. Call init() first.');
+      await ClipletServiceJson.init(this._appId, this._plugin);
+      return ClipletServiceJson.instance;
     }
   }
 
   async migrationStorageData(): Promise<void> {
     await ClipletServiceIdb.init(this._appId);
     await ClipletServiceJson.init(this._appId, this._plugin);
-    const fromService =
+
+    const fromService: IClipletServiceBackend =
       this.storageType === 'idb' ? ClipletServiceJson.instance : ClipletServiceIdb.instance;
-    const toService =
+    const toService: IClipletServiceBackend =
       this.storageType === 'idb' ? ClipletServiceIdb.instance : ClipletServiceJson.instance;
+
     const cliplets = await fromService.getAllCliplets();
     await toService.deleteAllCliplets();
-    cliplets.forEach(async (cliplet) => {
+
+    for (const cliplet of cliplets) {
       await toService.addCliplet(cliplet);
-    });
+    }
     await fromService.deleteAllCliplets();
     fromService.destroy();
     this._service = toService;

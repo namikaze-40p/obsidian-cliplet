@@ -43,6 +43,7 @@ export class ClipletServiceJson implements IClipletServiceBackend {
     const name = this._db.name;
     this._db.close();
     this._db = null;
+    await this.deleteAllCliplets();
     await deleteDB(name);
   }
 

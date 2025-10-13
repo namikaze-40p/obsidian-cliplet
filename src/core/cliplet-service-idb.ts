@@ -62,11 +62,11 @@ export class ClipletServiceIdb implements IClipletServiceBackend {
   }
 
   async addCliplet(value: ClipletItem): Promise<string> {
-    return this._store.add(value);
+    return this._store.add(this.normalizeObject(value));
   }
 
   async putCliplet(value: ClipletItem): Promise<void> {
-    return this._store.put(value);
+    return this._store.put(this.normalizeObject(value));
   }
 
   async deleteCliplet(id: string): Promise<void> {
@@ -83,5 +83,20 @@ export class ClipletServiceIdb implements IClipletServiceBackend {
 
   async deleteOverdueRecords(days: number): Promise<void> {
     return this._store.deleteOverdueRecords(days);
+  }
+
+  private normalizeObject(value: ClipletItem): ClipletItem {
+    return {
+      id: value.id,
+      name: value.name,
+      content: value.content,
+      type: value.type,
+      keyword: value.keyword,
+      pinned: value.pinned,
+      count: value.count,
+      created: value.created,
+      lastUsed: value.lastUsed,
+      lastModified: value.lastModified,
+    };
   }
 }

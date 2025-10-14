@@ -1,9 +1,3 @@
-import { App } from 'obsidian';
-
-export type CustomApp = App & {
-  appId: string;
-};
-
 export interface IClipletServiceBackend {
   destroy(): void;
   hasDB(): boolean;
@@ -21,8 +15,6 @@ export interface IClipletServiceBackend {
   deleteAllCliplets(): Promise<void>;
   deleteExceededRecords(maxCount: number): Promise<void>;
   deleteOverdueRecords(days: number): Promise<void>;
-
-  migrateAllToNewKey(): Promise<void>;
 }
 
 export type StorageType = 'idb' | 'json';
@@ -43,11 +35,6 @@ export interface ClipletItem {
 // Represents a ClipletItem that has been decrypted.
 // Both encrypted and decrypted contents are available.
 export type DecryptedClipletItem = ClipletItem & { decryptedContent: string };
-
-export interface MetaItem {
-  key: string;
-  value: string;
-}
 
 export interface ActionMenuItem {
   id: string;

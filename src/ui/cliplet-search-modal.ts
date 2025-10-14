@@ -2,13 +2,13 @@ import { App, Editor, FuzzyMatch, FuzzySuggestModal, Notice, setIcon } from 'obs
 import dayjs from 'dayjs';
 
 import Cliplet from '../main';
-import { ActionMenuItem, DecryptedClipletItem } from '../core/types';
-import { createStyles, deleteStyles, pasteCliplet } from '../utils';
-import { ActionMenuModal } from './action-menu-modal';
+import { ClipletService } from '../core/cliplet-service';
 import { ACTION_MENU_ITEMS, IS_APPLE, KEYS } from '../core/consts';
+import { ActionMenuItem, DecryptedClipletItem } from '../core/types';
+import { ActionMenuModal } from './action-menu-modal';
 import { ClipletConfirmModal } from './cliplet-confirm-modal';
 import { ClipletEditorModal } from './cliplet-editor-modal';
-import { ClipletService } from 'src/core/cliplet-service';
+import { createStyles, deleteStyles, pasteCliplet } from '../utils';
 
 export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> {
   private _service: ClipletService;

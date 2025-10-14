@@ -1,7 +1,7 @@
 import Cliplet from 'src/main';
-import { ClipletItem, IClipletServiceBackend, StorageType } from './types';
 import { ClipletServiceIdb } from './cliplet-service-idb';
 import { ClipletServiceJson } from './cliplet-service-json';
+import { ClipletItem, IClipletServiceBackend, StorageType } from './types';
 
 const compare = (a: ClipletItem, b: ClipletItem): number => {
   if (b.pinned > a.pinned) {
@@ -19,7 +19,7 @@ export class ClipletService {
   private _backend!: IClipletServiceBackend;
 
   constructor(
-    private readonly appId: string,
+    private readonly vaultId: string,
     private readonly plugin: Cliplet,
     private storageType: StorageType,
   ) {}
@@ -30,8 +30,8 @@ export class ClipletService {
 
   private async createBackend(kind: StorageType): Promise<IClipletServiceBackend> {
     return kind === 'idb'
-      ? await ClipletServiceIdb.create(this.appId)
-      : await ClipletServiceJson.create(this.appId, this.plugin);
+      ? await ClipletServiceIdb.create(this.vaultId)
+      : await ClipletServiceJson.create(this.vaultId, this.plugin);
   }
 
   async switchStorage(newType: StorageType): Promise<void> {
@@ -104,9 +104,5 @@ export class ClipletService {
 
   async deleteOverdueRecords(days: number): Promise<void> {
     return this._backend.deleteOverdueRecords(days);
-  }
-
-  async migrateAllToNewKey(): Promise<void> {
-    return this._backend.migrateAllToNewKey();
   }
 }

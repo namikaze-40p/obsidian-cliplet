@@ -2,12 +2,11 @@ import { Editor, Notice, Plugin } from 'obsidian';
 import dayjs from 'dayjs';
 import { v4 as uuid } from 'uuid';
 
-import { DEFAULT_SETTINGS, SettingTab, Settings } from './settings';
-import { pasteCliplet } from './utils';
-import { ClipletSearchModal } from './ui/cliplet-search-modal';
 import { MAXIMUM_RECORDS, RETENTION_PERIOD } from './core/consts';
 import { ClipletService } from './core/cliplet-service';
-import { CustomApp } from './core/types';
+import { ClipletSearchModal } from './ui/cliplet-search-modal';
+import { DEFAULT_SETTINGS, SettingTab, Settings } from './settings';
+import { pasteCliplet } from './utils';
 
 const RELOAD_MESSAGE = 'Please reload Obsidian to use the “Cliplet” plugin.';
 
@@ -45,13 +44,18 @@ export default class Cliplet extends Plugin {
       editorCallback: (editor) => this.searchCliplet(editor),
     });
 
+    if (!this.settings.vaultId) {
+      this.settings.vaultId = uuid();
+      await this.saveSettings();
+    }
+
     this.app.workspace.onLayoutReady(async () => {
       const storageType = this.settings.storageType;
-      this._service = new ClipletService((this.app as CustomApp).appId, this, storageType);
+      this._service = new ClipletService(this.settings.vaultId, this, storageType);
       await this._service.init();
-      if (!this.settings.version) {
-        await this._service.migrateAllToNewKey();
-        this.settings.version = this.manifest.version;
+      if (!this.settings.pluginVersion) {
+        await this._service.deleteDB();
+        this.settings.pluginVersion = this.manifest.version;
         await this.saveSettings();
       }
 

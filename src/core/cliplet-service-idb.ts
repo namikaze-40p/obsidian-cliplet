@@ -1,9 +1,8 @@
 import { deleteDB, IDBPDatabase } from 'idb';
 
 import crypto from './crypto';
-import { ClipletDBSchema, getDbPromise } from './database';
 import { ClipletStoreIdb } from './cliplet-store-idb';
-import { MetaStore } from './meta-store';
+import { ClipletDBSchema, getDbPromise } from './database';
 import { ClipletItem, IClipletServiceBackend } from './types';
 
 export class ClipletServiceIdb implements IClipletServiceBackend {
@@ -11,18 +10,13 @@ export class ClipletServiceIdb implements IClipletServiceBackend {
     private _db: IDBPDatabase<ClipletDBSchema> | null,
     private _store: ClipletStoreIdb,
     private _aesKey: CryptoKey,
-    private _legacyAesKey: CryptoKey,
   ) {}
 
-  static async create(appId: string): Promise<ClipletServiceIdb> {
-    const db = await getDbPromise(appId);
-    const meta = new MetaStore(db);
-    const seed = await meta.getOrCreateSeed(appId);
-    const key = await crypto.deriveKey(appId + seed, crypto.salt2);
-    const legacySeed = meta.getOrCreateSeed(appId);
-    const legacyKey = await crypto.deriveKey(appId + legacySeed, crypto.salt2);
+  static async create(vaultId: string): Promise<ClipletServiceIdb> {
+    const db = await getDbPromise(vaultId);
+    const key = await crypto.deriveKey(vaultId);
     const store = new ClipletStoreIdb(db);
-    return new ClipletServiceIdb(db, store, key, legacyKey);
+    return new ClipletServiceIdb(db, store, key);
   }
 
   destroy(): void {
@@ -49,11 +43,7 @@ export class ClipletServiceIdb implements IClipletServiceBackend {
   }
 
   async decrypt(value: string): Promise<string> {
-    try {
-      return await crypto.decryptData(value, this._aesKey);
-    } catch {
-      return await crypto.decryptData(value, this._legacyAesKey);
-    }
+    return await crypto.decryptData(value, this._aesKey);
   }
 
   async encrypt(value: string): Promise<string> {
@@ -90,15 +80,6 @@ export class ClipletServiceIdb implements IClipletServiceBackend {
 
   async deleteOverdueRecords(days: number): Promise<void> {
     return this._store.deleteOverdueRecords(days);
-  }
-
-  async migrateAllToNewKey(): Promise<void> {
-    const cliplets = await this._store.list();
-    for (const cliplet of cliplets) {
-      const plain = await this.decrypt(cliplet.content);
-      const reEncryptedContent = await crypto.encryptData(plain, this._aesKey);
-      await this._store.put({ ...cliplet, content: reEncryptedContent });
-    }
   }
 
   private normalizeObject(value: ClipletItem): ClipletItem {

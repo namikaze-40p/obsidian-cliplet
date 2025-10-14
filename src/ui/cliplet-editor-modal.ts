@@ -2,10 +2,10 @@ import { App, Modal, Notice, Setting } from 'obsidian';
 import dayjs from 'dayjs';
 import { v4 as uuid } from 'uuid';
 
-import { ClipletItem, DecryptedClipletItem } from '../core/types';
-import { IS_APPLE, KEYS } from '../core/consts';
 import Cliplet from '../main';
-import { ClipletService } from 'src/core/cliplet-service';
+import { ClipletService } from '../core/cliplet-service';
+import { IS_APPLE, KEYS } from '../core/consts';
+import { ClipletItem, DecryptedClipletItem } from '../core/types';
 
 export class ClipletEditorModal extends Modal {
   private _service: ClipletService;

@@ -1,8 +1,8 @@
 import { IDBPDatabase } from 'idb';
 import dayjs from 'dayjs';
 
-import { ClipletItem } from './types';
 import { ClipletDBSchema } from './database';
+import { ClipletItem } from './types';
 
 const STORE_NAME = 'cliplet';
 

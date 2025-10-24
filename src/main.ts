@@ -8,7 +8,10 @@ import { ClipletSearchModal } from './ui/cliplet-search-modal';
 import { DEFAULT_SETTINGS, SettingTab, Settings } from './settings';
 import { pasteCliplet } from './utils';
 
-const RELOAD_MESSAGE = 'Please reload Obsidian to use the “Cliplet” plugin.';
+const MESSAGE = {
+  notFound: 'No latest cliplet found.\nPlease add a cliplet first.',
+  reload: 'Please reload Obsidian to use the “Cliplet” plugin.',
+};
 
 export default class Cliplet extends Plugin {
   private _service: ClipletService;
@@ -92,7 +95,7 @@ export default class Cliplet extends Plugin {
 
   private async addCliplet(content: string): Promise<void> {
     if (!this._service.hasDB()) {
-      new Notice(RELOAD_MESSAGE);
+      new Notice(MESSAGE.reload);
       return;
     }
 
@@ -117,13 +120,9 @@ export default class Cliplet extends Plugin {
   }
 
   private async pasteLatestCliplet(editor: Editor): Promise<void> {
-    const latestClipletId = this.settings.latestClipletId;
-    if (!latestClipletId) {
-      new Notice('No latest cliplet found. Please add a cliplet first.');
-      return;
-    }
-    const cliplet = await this._service.getCliplet(latestClipletId);
+    const cliplet = await this._service.getCliplet(this.settings.latestClipletId);
     if (!cliplet) {
+      new Notice(MESSAGE.notFound);
       return;
     }
     const decryptedContent = await this._service.decrypt(cliplet.content);
@@ -133,7 +132,7 @@ export default class Cliplet extends Plugin {
 
   private async searchCliplet(editor: Editor): Promise<void> {
     if (!this._service.hasDB()) {
-      new Notice(RELOAD_MESSAGE);
+      new Notice(MESSAGE.reload);
       return;
     }
 

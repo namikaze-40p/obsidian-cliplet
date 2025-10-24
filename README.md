@@ -27,18 +27,18 @@ Both options work entirely offline and keep your data private (content is encryp
 
 | Storage type  | Advantages                                                                                                       | Disadvantages                                                                             |
 | ------------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| **IndexedDB** | Per-device and per-vault isolation enables different data sets for different contexts.                           | Does not sync between devices; data stays local unless you manually export/move it.       |
+| **IndexedDB** | Per-device and per-vault isolation enables different data sets for different contexts.                           | Does not sync between devices; data is stored locally on each device.                     |
 | **data.json** | Easy to locate and manage. Included in vault backups, sync solutions, and Git history. Portable between devices. | Storing many large cliplets can increase file size, which may slow loading or sync times. |
 
 > [!NOTE]
 >
 > - **Encryption**: Cliplet encrypts stored content. While this prevents casual access, it is open-source software—someone with sufficient knowledge and access could theoretically decrypt the data.
-> - **data.json storage caution**: This applies only when using the `data.json` storage option. If your vault is stored on the internet (e.g., in a public GitHub repository or shared cloud folder), avoid making `data.json` publicly accessible. Even though its contents are encrypted, publishing it may still expose sensitive information to potential decryption attempts.
+> - **data.json storage notes**:
+>   - If your vault is stored on the internet (e.g., in a public GitHub repository or shared cloud folder), avoid making `data.json` publicly accessible. Even though its contents are encrypted, publishing it may still expose sensitive information to potential decryption attempts.
+>   - Using `data.json` lets your cliplets sync across devices — **but only if your sync service keeps that file up to date**.  
+>     Some services, like **iCloud**, can be **slow or unreliable** at syncing `data.json`, especially on iPhone or iPad.  
+>     If you frequently use Cliplet across multiple devices, please check how reliably your sync solution updates `data.json` before relying on it.
 > - **Device behavior**: IndexedDB is per device and per vault; `data.json` travels with your vault (Obsidian Sync/Dropbox/Git, etc.).
-> - **Sync note for `data.json`**:  
->   Using `data.json` lets your cliplets sync across devices — **but only if your sync service keeps that file up to date**.  
->   Some services, like **iCloud**, can be **slow or unreliable** at syncing `data.json`, especially on iPhone or iPad.  
->   If you frequently use Cliplet across multiple devices, please check how reliably your sync solution updates `data.json` before relying on it.
 > - **Switching**: You can change the storage method in settings. A built-in migration moves all items to the selected storage and deletes them from the previous one.
 
 ## How to use

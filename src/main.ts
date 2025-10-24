@@ -29,7 +29,16 @@ export default class Cliplet extends Plugin {
     this.addCommand({
       id: 'add-cliplet',
       name: 'Add cliplet',
-      editorCallback: (editor) => this.addCliplet(editor),
+      editorCheckCallback: (checking: boolean, editor: Editor): boolean => {
+        const content = editor.getSelection();
+        if (checking) {
+          return !!content.length;
+        }
+        if (content.length) {
+          void this.addCliplet(content);
+        }
+        return true;
+      },
     });
 
     this.addCommand({
@@ -81,14 +90,9 @@ export default class Cliplet extends Plugin {
     await this.saveData(this.settings);
   }
 
-  private async addCliplet(editor: Editor): Promise<void> {
+  private async addCliplet(content: string): Promise<void> {
     if (!this._service.hasDB()) {
       new Notice(RELOAD_MESSAGE);
-      return;
-    }
-
-    const content = editor.getSelection();
-    if (!content) {
       return;
     }
 

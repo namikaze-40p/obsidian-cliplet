@@ -164,7 +164,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
 
     observeItems();
 
-    this.inputEl.addEventListener('input', async () => {
+    this.inputEl.addEventListener('input', () => {
       const cliplet = this.findClipletItem(suggestionContainer.firstChild?.lastChild);
       this._lastTappedClipletId = cliplet?.id || '';
       this.updateDetailView(cliplet || null);
@@ -173,7 +173,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
   }
 
   private generateObserver(): MutationObserver {
-    return new MutationObserver(async (mutations: MutationRecord[]) => {
+    return new MutationObserver((mutations: MutationRecord[]) => {
       for (const { type, attributeName, target } of mutations) {
         if (type === 'attributes' && attributeName === 'class') {
           const cliplet = this.findClipletItem(target.lastChild);

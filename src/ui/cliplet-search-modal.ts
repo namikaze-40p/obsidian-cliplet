@@ -27,7 +27,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
   private _editorModal: ClipletEditorModal | null = null;
   private _confirmModal: ClipletConfirmModal | null = null;
   private _lastTappedClipletId: string = '';
-  private readonly _close: () => void = this.close.bind(this);
+  private _preventClose = false;
 
   constructor(
     app: App,
@@ -46,6 +46,14 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
     const detailEl = this.modalEl.createDiv('cliplet-detail');
     this.generateDetails(detailEl);
     this.generateFooter(this.modalEl);
+  }
+
+  close(): void {
+    if (this._preventClose) {
+      this._preventClose = false;
+      return;
+    }
+    super.close();
   }
 
   async onOpen(): Promise<void> {
@@ -96,7 +104,6 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
       this.onChooseItem(cliplet);
     } else {
       this._lastTappedClipletId = cliplet.id;
-      this.close = this._close;
     }
   }
 
@@ -209,7 +216,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
 
       if (!['BEFORE_SET', cliplet.id].includes(this._lastTappedClipletId)) {
         this._lastTappedClipletId = 'BEFORE_SET';
-        this.close = () => {};
+        this._preventClose = true;
       }
     });
   }

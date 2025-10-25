@@ -1,4 +1,4 @@
-import { Platform } from 'obsidian';
+import { Modifier, Platform } from 'obsidian';
 
 export const RETENTION_PERIOD = 60;
 export const MAXIMUM_RECORDS = 200;
@@ -19,8 +19,9 @@ export const ACTION_MENU_ITEMS = [
     labels: [KEYS.enter],
     command: {
       key: 'Enter',
-      modifiers: [],
+      modifiers: [] as Modifier[],
     },
+    isDanger: false,
   },
   {
     id: 'edit',
@@ -28,8 +29,9 @@ export const ACTION_MENU_ITEMS = [
     labels: [KEYS.mod, 'E'],
     command: {
       key: 'e',
-      modifiers: [IS_APPLE ? 'metaKey' : 'ctrlKey'],
+      modifiers: [IS_APPLE ? 'Meta' : 'Ctrl'] as Modifier[],
     },
+    isDanger: false,
   },
   {
     id: 'pin',
@@ -37,8 +39,9 @@ export const ACTION_MENU_ITEMS = [
     labels: [KEYS.mod, 'P'],
     command: {
       key: 'p',
-      modifiers: [IS_APPLE ? 'metaKey' : 'ctrlKey'],
+      modifiers: [IS_APPLE ? 'Meta' : 'Ctrl'] as Modifier[],
     },
+    isDanger: false,
   },
   {
     id: 'unpin',
@@ -46,8 +49,9 @@ export const ACTION_MENU_ITEMS = [
     labels: [KEYS.mod, 'P'],
     command: {
       key: 'p',
-      modifiers: [IS_APPLE ? 'metaKey' : 'ctrlKey'],
+      modifiers: [IS_APPLE ? 'Meta' : 'Ctrl'] as Modifier[],
     },
+    isDanger: false,
   },
   {
     id: 'create',
@@ -55,8 +59,9 @@ export const ACTION_MENU_ITEMS = [
     labels: [KEYS.mod, 'N'],
     command: {
       key: 'n',
-      modifiers: [IS_APPLE ? 'metaKey' : 'ctrlKey'],
+      modifiers: [IS_APPLE ? 'Meta' : 'Ctrl'] as Modifier[],
     },
+    isDanger: false,
   },
   {
     id: 'delete',
@@ -64,7 +69,7 @@ export const ACTION_MENU_ITEMS = [
     labels: [KEYS.ctrl, 'X'],
     command: {
       key: 'x',
-      modifiers: [IS_APPLE ? 'ctrlKey' : 'altKey'],
+      modifiers: [IS_APPLE ? 'Ctrl' : 'Alt'] as Modifier[],
     },
     isDanger: true,
   },
@@ -74,7 +79,7 @@ export const ACTION_MENU_ITEMS = [
     labels: [KEYS.ctrl, KEYS.shift, 'X'],
     command: {
       key: 'X',
-      modifiers: [IS_APPLE ? 'ctrlKey' : 'altKey', 'shiftKey'],
+      modifiers: [IS_APPLE ? 'Ctrl' : 'Alt', 'Shift'] as Modifier[],
     },
     isDanger: true,
   },

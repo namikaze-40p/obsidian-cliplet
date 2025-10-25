@@ -1,4 +1,4 @@
-import { App, Editor, FuzzyMatch, FuzzySuggestModal, Notice, setIcon } from 'obsidian';
+import { App, Editor, FuzzyMatch, FuzzySuggestModal, Modifier, Notice, setIcon } from 'obsidian';
 import dayjs from 'dayjs';
 
 import Cliplet from '../main';
@@ -21,11 +21,6 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
     lastModified: null,
     created: null,
   };
-  private _actionMenuItemMap = new Map(ACTION_MENU_ITEMS.map((item) => [item.id, item]));
-  private _eventListenerFn: (ev: KeyboardEvent) => void;
-  private _actionMenuModal: ActionMenuModal | null = null;
-  private _editorModal: ClipletEditorModal | null = null;
-  private _confirmModal: ClipletConfirmModal | null = null;
   private _lastTappedClipletId: string = '';
   private _preventClose = false;
 
@@ -37,8 +32,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
     super(app);
     this._service = _plugin.service;
 
-    this._eventListenerFn = this.handlingKeydownEvent.bind(this);
-    window.addEventListener('keydown', this._eventListenerFn);
+    this.registerShortcutKeys();
 
     this.modalEl.addClasses(['cliplet-search-modal', 'cs-modal']);
     this.setPlaceholder('Search cliplet...');
@@ -68,10 +62,6 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
     if (suggestionContainer) {
       this.detectChangeSuggestionItems(suggestionContainer);
     }
-  }
-
-  onClose(): void {
-    window.removeEventListener('keydown', this._eventListenerFn);
   }
 
   getItems(): DecryptedClipletItem[] {
@@ -288,51 +278,30 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
     });
   }
 
-  private handlingKeydownEvent(ev: KeyboardEvent): void {
-    switch (ev.key) {
-      case 'k':
-        if (IS_APPLE ? ev.metaKey : ev.ctrlKey) {
-          if (this._actionMenuModal) {
-            this._actionMenuModal.close();
-          } else {
-            this.openActionMenuModal();
-          }
+  private registerShortcutKeys(): void {
+    const bindings: [Modifier[], string, (ev: KeyboardEvent) => void][] = [
+      [
+        [IS_APPLE ? 'Meta' : 'Ctrl'],
+        'k',
+        (ev) => {
+          this.openActionMenuModal();
+          ev.stopPropagation();
           ev.preventDefault();
-        }
-        return;
-      case 'e':
-        this.handlingActionMenu(ev, 'edit');
-        return;
-      case 'p':
-        this.handlingActionMenu(ev, 'pin');
-        return;
-      case 'n':
-        this.handlingActionMenu(ev, 'create');
-        return;
-      case 'x':
-        this.handlingActionMenu(ev, 'delete');
-        return;
-      case 'X':
-        this.handlingActionMenu(ev, 'deleteResults');
-        return;
-      default:
-        // nop
-        return;
-    }
-  }
-
-  private handlingActionMenu(ev: KeyboardEvent, actionId: string): void {
-    if (this._actionMenuModal || this._editorModal || this._confirmModal) {
-      return;
-    }
-    const menuItem = this._actionMenuItemMap.get(actionId);
-    if (
-      menuItem &&
-      menuItem.command.modifiers?.every((modifier) => ev[modifier as keyof KeyboardEvent])
-    ) {
-      this.onSelectMenuItem(menuItem);
-      ev.preventDefault();
-    }
+        },
+      ],
+      ...(ACTION_MENU_ITEMS.map((item) => {
+        return [
+          item.command.modifiers,
+          item.command.key,
+          (ev) => {
+            this.onSelectMenuItem(item);
+            ev.stopPropagation();
+            ev.preventDefault();
+          },
+        ];
+      }) as [Modifier[], string, (ev: KeyboardEvent) => void][]),
+    ];
+    bindings.forEach(([mods, key, handler]) => this.scope.register(mods, key, handler));
   }
 
   private async onSelectMenuItem(item: ActionMenuItem): Promise<void> {
@@ -408,26 +377,22 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
     const stylesId = 'cliplet-editor-modal-styles';
     createStyles(styles, stylesId);
 
-    this._editorModal = new ClipletEditorModal(
+    const modal = new ClipletEditorModal(
       this.app,
       this._plugin,
       isEdit ? this._currentCliplet : null,
     );
-    this._editorModal.open();
-    this._editorModal.whenClosed().then(async () => {
+    modal.open();
+    modal.whenClosed().then(async () => {
       await this.getCliplets();
-      this._editorModal = null;
       deleteStyles(stylesId);
     });
   }
 
   private openConfirmModal(callback: () => Promise<void>, message: string): void {
-    this._confirmModal = new ClipletConfirmModal(this.app, callback, message);
-    this._confirmModal.open();
-    this._confirmModal.whenClosed().then(async () => {
-      await this.getCliplets();
-      this._confirmModal = null;
-    });
+    const modal = new ClipletConfirmModal(this.app, callback, message);
+    modal.open();
+    modal.whenClosed().then(async () => await this.getCliplets());
   }
 
   private openActionMenuModal(): void {
@@ -442,16 +407,9 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
     createStyles(styles, stylesId);
 
     const actionMenuItems = this.generateActionMenuItems();
-    this._actionMenuModal = new ActionMenuModal(
-      this.app,
-      this.onSelectMenuItem.bind(this),
-      actionMenuItems,
-    );
-    this._actionMenuModal.open();
-    this._actionMenuModal.whenClosed().then(() => {
-      this._actionMenuModal = null;
-      deleteStyles(stylesId);
-    });
+    const modal = new ActionMenuModal(this.app, this.onSelectMenuItem.bind(this), actionMenuItems);
+    modal.open();
+    modal.whenClosed().then(() => deleteStyles(stylesId));
   }
 
   private generateActionMenuItems(): ActionMenuItem[] {

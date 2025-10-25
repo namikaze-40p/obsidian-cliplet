@@ -13,7 +13,6 @@ export class ClipletEditorModal extends Modal {
     name: '' as string,
     content: '' as string,
   };
-  private _eventListenerFn: (ev: KeyboardEvent) => void;
   private _resolveClose: (() => void) | null = null;
 
   constructor(
@@ -25,8 +24,11 @@ export class ClipletEditorModal extends Modal {
     this._service = _plugin.service;
     this._cliplet = _cliplet ? structuredClone(_cliplet) : null;
 
-    this._eventListenerFn = this.handlingKeydownEvent.bind(this);
-    window.addEventListener('keydown', this._eventListenerFn);
+    this.scope.register([IS_APPLE ? 'Meta' : 'Ctrl'], 'Enter', async (ev) => {
+      await this.saveCliplet();
+      ev.stopPropagation();
+      ev.preventDefault();
+    });
   }
 
   onOpen(): void {
@@ -75,7 +77,6 @@ export class ClipletEditorModal extends Modal {
   }
 
   onClose(): void {
-    window.removeEventListener('keydown', this._eventListenerFn);
     if (this._resolveClose) {
       this._resolveClose();
     }
@@ -83,14 +84,6 @@ export class ClipletEditorModal extends Modal {
 
   whenClosed(): Promise<void> {
     return new Promise((resolve) => (this._resolveClose = resolve));
-  }
-
-  private handlingKeydownEvent(ev: KeyboardEvent): void {
-    if (ev.key === 'Enter' && (IS_APPLE ? ev.metaKey : ev.ctrlKey)) {
-      this.saveCliplet();
-      ev.preventDefault();
-      return;
-    }
   }
 
   private async saveCliplet(): Promise<void> {

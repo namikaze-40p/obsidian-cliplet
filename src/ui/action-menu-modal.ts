@@ -1,9 +1,9 @@
-import { App, FuzzyMatch, FuzzySuggestModal, setIcon } from 'obsidian';
+import { App, FuzzyMatch, FuzzySuggestModal, Modifier, setIcon } from 'obsidian';
 
 import { ActionMenuItem } from '../core/types';
+import { IS_APPLE } from 'src/core/consts';
 
 export class ActionMenuModal extends FuzzySuggestModal<ActionMenuItem> {
-  private _eventListenerFn: (ev: KeyboardEvent) => void;
   private _resolveClose: (() => void) | null = null;
 
   constructor(
@@ -16,12 +16,10 @@ export class ActionMenuModal extends FuzzySuggestModal<ActionMenuItem> {
     this.setPlaceholder('Search action...');
     this.modalEl.addClasses(['cliplet-action-menu-modal', 'ca-modal']);
 
-    this._eventListenerFn = this.handlingKeydownEvent.bind(this);
-    window.addEventListener('keydown', this._eventListenerFn);
+    this.registerShortcutKeys();
   }
 
   onClose(): void {
-    window.removeEventListener('keydown', this._eventListenerFn);
     if (this._resolveClose) {
       this._resolveClose();
     }
@@ -56,16 +54,31 @@ export class ActionMenuModal extends FuzzySuggestModal<ActionMenuItem> {
     return suggestionItemEl;
   }
 
-  private handlingKeydownEvent(ev: KeyboardEvent): void {
-    for (const menu of this._menuItems) {
-      const { key, modifiers } = menu.command;
-      if (ev.key === key && modifiers.every((modifier) => ev[modifier as keyof KeyboardEvent])) {
-        this._onSelectMenuItem(menu);
-        ev.preventDefault();
-        this.close();
-        return;
-      }
-    }
+  private registerShortcutKeys(): void {
+    const bindings: [Modifier[], string, (ev: KeyboardEvent) => void][] = [
+      [
+        [IS_APPLE ? 'Meta' : 'Ctrl'],
+        'k',
+        (ev) => {
+          this.close();
+          ev.stopPropagation();
+          ev.preventDefault();
+        },
+      ],
+      ...(this._menuItems.map((item) => {
+        return [
+          item.command.modifiers,
+          item.command.key,
+          (ev) => {
+            this._onSelectMenuItem(item);
+            ev.stopPropagation();
+            ev.preventDefault();
+            this.close();
+          },
+        ];
+      }) as [Modifier[], string, (ev: KeyboardEvent) => void][]),
+    ];
+    bindings.forEach(([mods, key, handler]) => this.scope.register(mods, key, handler));
   }
 
   private getIcon(menu: ActionMenuItem): string {

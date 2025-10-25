@@ -1,3 +1,5 @@
+import { Modifier } from 'obsidian';
+
 export interface IClipletServiceBackend {
   destroy(): void;
   hasDB(): boolean;
@@ -42,7 +44,7 @@ export interface ActionMenuItem {
   labels: string[];
   command: {
     key: string;
-    modifiers: string[];
+    modifiers: Modifier[];
   };
-  isDanger?: boolean;
+  isDanger: boolean;
 }

@@ -1,7 +1,6 @@
 import { App, ButtonComponent, PluginSettingTab, Setting } from 'obsidian';
 
 import Cliplet from './main';
-import { createStyles, deleteStyles } from './utils';
 import { ClipletItem, StorageType } from './core/types';
 import { ClipletService } from './core/cliplet-service';
 
@@ -95,14 +94,5 @@ export class SettingTab extends PluginSettingTab {
             this.display();
           });
       });
-  }
-
-  updateStyleSheet(isTeardown = false): void {
-    deleteStyles();
-    if (isTeardown) {
-      return;
-    }
-
-    createStyles([]);
   }
 }

@@ -73,7 +73,6 @@ export default class Cliplet extends Plugin {
 
       this._settingTab = new SettingTab(this.app, this);
       this.addSettingTab(this._settingTab);
-      this._settingTab.updateStyleSheet();
 
       this.deleteExceededRecords();
       this.deleteOverdueRecords();
@@ -81,7 +80,6 @@ export default class Cliplet extends Plugin {
   }
 
   onunload(): void {
-    this._settingTab.updateStyleSheet(true);
     this._service.closeDB();
   }
 

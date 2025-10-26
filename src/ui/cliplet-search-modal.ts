@@ -8,7 +8,7 @@ import { ActionMenuItem, DecryptedClipletItem } from '../core/types';
 import { ActionMenuModal } from './action-menu-modal';
 import { ClipletConfirmModal } from './cliplet-confirm-modal';
 import { ClipletEditorModal } from './cliplet-editor-modal';
-import { createStyles, deleteStyles, pasteCliplet } from '../utils';
+import { pasteCliplet } from '../utils';
 
 export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> {
   private _service: ClipletService;
@@ -367,25 +367,20 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
   }
 
   private openEditorModal(isEdit: boolean): void {
-    const ref = document.querySelector<HTMLElement>('.cliplet-search-modal');
-    const selector = '.cliplet-editor-modal.ce-modal';
-    const styles = [
-      { selector, property: 'top', value: `${ref?.offsetTop || 0}px` },
-      { selector, property: 'height', value: `${ref?.offsetHeight || 0}px` },
-      { selector, property: 'width', value: `${ref?.offsetWidth || 0}px` },
-    ];
-    const stylesId = 'cliplet-editor-modal-styles';
-    createStyles(styles, stylesId);
+    const cliplet = isEdit ? this._currentCliplet : null;
+    const modal = new ClipletEditorModal(this.app, this._plugin, cliplet);
 
-    const modal = new ClipletEditorModal(
-      this.app,
-      this._plugin,
-      isEdit ? this._currentCliplet : null,
-    );
+    const ref = this.modalEl;
+    modal.modalEl.style.setProperty('--cliplet-editor-modal-top', `${ref.offsetTop}px`);
+    modal.modalEl.style.setProperty('--cliplet-editor-modal-height', `${ref.offsetHeight}px`);
+    modal.modalEl.style.setProperty('--cliplet-editor-modal-width', `${ref.offsetWidth}px`);
+
     modal.open();
     modal.whenClosed().then(async () => {
       await this.getCliplets();
-      deleteStyles(stylesId);
+      modal.modalEl.style.removeProperty('--cliplet-editor-modal-top');
+      modal.modalEl.style.removeProperty('--cliplet-editor-modal-height');
+      modal.modalEl.style.removeProperty('--cliplet-editor-modal-width');
     });
   }
 
@@ -396,20 +391,20 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
   }
 
   private openActionMenuModal(): void {
-    const ref = document.querySelector<HTMLElement>('.cliplet-search-modal');
-    const selector =
-      '.modal-container.mod-dim:has(.cliplet-action-menu-modal) .cliplet-action-menu-modal';
-    const styles = [
-      { selector, property: 'right', value: `calc((100% - ${ref?.offsetWidth || 0}px) / 2 + 8px)` },
-      { selector, property: 'bottom', value: `calc(100% - (442px + ${ref?.offsetTop || 0}px))` },
-    ];
-    const stylesId = 'cliplet-action-menu-modal-styles';
-    createStyles(styles, stylesId);
-
     const actionMenuItems = this.generateActionMenuItems();
     const modal = new ActionMenuModal(this.app, this.onSelectMenuItem.bind(this), actionMenuItems);
+
+    const ref = this.modalEl;
+    const right = `calc((100% - ${ref?.offsetWidth || 0}px) / 2 + 8px)`;
+    const bottom = `calc(100% - (442px + ${ref?.offsetTop || 0}px))`;
+    modal.modalEl.style.setProperty('--cliplet-action-menu-modal-right', right);
+    modal.modalEl.style.setProperty('--cliplet-action-menu-modal-bottom', bottom);
+
     modal.open();
-    modal.whenClosed().then(() => deleteStyles(stylesId));
+    modal.whenClosed().then(() => {
+      modal.modalEl.style.removeProperty('--cliplet-action-menu-modal-right');
+      modal.modalEl.style.removeProperty('--cliplet-action-menu-modal-bottom');
+    });
   }
 
   private generateActionMenuItems(): ActionMenuItem[] {

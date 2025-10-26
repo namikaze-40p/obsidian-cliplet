@@ -1,3 +1,12 @@
+:root {
+  --cliplet-editor-modal-top: initial;
+  --cliplet-editor-modal-height: max-content;
+  --cliplet-editor-modal-width: 80vw;
+
+  --cliplet-action-menu-modal-right: initial;
+  --cliplet-action-menu-modal-bottom: initial;
+}
+
 .modal-container.mod-dim {
   &:has(.cliplet-search-modal),
   &:has(.cliplet-editor-modal),
@@ -111,6 +120,8 @@
   display: flex;
   flex-direction: column-reverse;
   top: initial;
+  right: var(--cliplet-action-menu-modal-right);
+  bottom: var(--cliplet-action-menu-modal-bottom);
   width: 320px;
   height: max-content !important;
   border: var(--prompt-border-width) solid var(--prompt-border-color) !important;
@@ -175,6 +186,9 @@ body.theme-dark .cliplet-legend-label {
     'header'
     'content'
     'footer';
+  top: var(--cliplet-editor-modal-top);
+  height: var(--cliplet-editor-modal-height);
+  width: var(--cliplet-editor-modal-width);
 
   & > div:not(:last-child) {
     padding: 0 1rem;

@@ -1,6 +1,6 @@
-# Obsidian Cliplet
+# Cliplet
 
-This is an [Obsidian](https://obsidian.md/) plugin that a clipboard and snippet manager — your own, separate from the OS clipboard.
+An [Obsidian](https://obsidian.md/) plugin that serves as a clipboard and snippet manager — your own, separate from the OS clipboard.
 
 ## Concept
 

@@ -60,7 +60,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
     }
     const suggestionContainer = this.containerEl.querySelector('.prompt-results');
     if (suggestionContainer) {
-      this.detectChangeSuggestionItems(suggestionContainer);
+      this.detectChangeSelectedItem(suggestionContainer);
     }
   }
 
@@ -119,6 +119,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
 
     frag.append(iconWrap, textSpan);
     suggestionItemEl.replaceChildren(frag);
+    this.attachPointerHandler(suggestionItemEl);
     return suggestionItemEl;
   }
 
@@ -152,36 +153,21 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
     this._detailEls[propName] = wrapEl.createSpan('');
   }
 
-  private detectChangeSuggestionItems(suggestionContainer: Element): void {
-    const observer = this.generateObserver();
-    const observeItems = () => {
-      const items = suggestionContainer.querySelectorAll('.suggestion-item');
-      items.forEach((item) => {
-        this.attachPointerHandler(item);
-        return observer.observe(item, { attributes: true, attributeFilter: ['class'] });
-      });
-    };
-
-    observeItems();
-
-    this.inputEl.addEventListener('input', () => {
-      const cliplet = this.findClipletItem(suggestionContainer.firstChild?.lastChild);
-      this._lastTappedClipletId = cliplet?.id || '';
-      this.updateDetailView(cliplet || null);
-      setTimeout(observeItems, 0);
-    });
-  }
-
-  private generateObserver(): MutationObserver {
-    return new MutationObserver((mutations: MutationRecord[]) => {
-      for (const { type, attributeName, target } of mutations) {
-        if (type === 'attributes' && attributeName === 'class') {
-          const cliplet = this.findClipletItem(target.lastChild);
-          if (cliplet) {
-            this.updateDetailView(cliplet);
-          }
+  private detectChangeSelectedItem(suggestionContainer: Element): void {
+    const observer = new MutationObserver(() => {
+      const selectedEl = suggestionContainer.querySelector('.suggestion-item.is-selected');
+      if (selectedEl) {
+        const cliplet = this.findClipletItem(selectedEl.lastChild);
+        if (this._currentCliplet?.id !== cliplet?.id) {
+          this.updateDetailView(cliplet || null);
         }
       }
+    });
+
+    observer.observe(suggestionContainer, {
+      attributes: true,
+      subtree: true,
+      attributeFilter: ['class'],
     });
   }
 
@@ -240,6 +226,9 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
         lastModified.parentElement?.removeClass('is-hidden');
       } else {
         lastModified.parentElement?.addClass('is-hidden');
+      }
+      if (!this._preventClose) {
+        this._lastTappedClipletId = cliplet.id;
       }
     } else {
       this._lastTappedClipletId = '';

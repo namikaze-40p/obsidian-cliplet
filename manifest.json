@@ -1,7 +1,7 @@
 {
   "id": "cliplet",
   "name": "Cliplet",
-  "version": "0.2.1",
+  "version": "0.2.2-beta.2",
   "minAppVersion": "1.9.10",
   "description": "A clipboard and snippet manager — your own, separate from the OS clipboard.",
   "author": "namikaze-40p",

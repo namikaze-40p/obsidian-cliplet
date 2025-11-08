@@ -1,4 +1,4 @@
-import { App, ButtonComponent, PluginSettingTab, Setting } from 'obsidian';
+import { App, ButtonComponent, Notice, PluginSettingTab, Setting } from 'obsidian';
 
 import Cliplet from './main';
 import { ClipletItem, StorageType } from './core/types';
@@ -6,6 +6,7 @@ import { ClipletService } from './core/cliplet-service';
 
 export const DEFAULT_STORAGE_OPTIONS = { idb: 'IndexedDB', json: 'data.json' } as const;
 const DELETION_CONFIRMATION_TEXT = 'Delete';
+const DELETE_SUCCESS_MESSAGE = 'All Cliplet data has been deleted.\nPlease reload Obsidian.';
 
 export interface Settings {
   storageType: StorageType;
@@ -89,6 +90,7 @@ export class SettingTab extends PluginSettingTab {
           .setDisabled(true)
           .onClick(async () => {
             await this._service.deleteDB();
+            new Notice(DELETE_SUCCESS_MESSAGE);
             this._plugin.settings.latestClipletId = '';
             await this._plugin.saveData(this._plugin.settings);
             this.display();

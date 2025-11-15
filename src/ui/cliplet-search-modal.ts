@@ -54,10 +54,6 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
     super.onOpen();
 
     await this.getCliplets();
-    if (this._cliplets.length) {
-      this._lastTappedClipletId = this._cliplets[0].id;
-      this.updateDetailView(this._cliplets[0]);
-    }
     const suggestionContainer = this.containerEl.querySelector('.prompt-results');
     if (suggestionContainer) {
       this.detectChangeSelectedItem(suggestionContainer);
@@ -132,6 +128,11 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
       }),
     );
     this.inputEl.dispatchEvent(new Event('input'));
+
+    if (this._cliplets.length) {
+      this._lastTappedClipletId = this._cliplets[0].id;
+      this.updateDetailView(this._cliplets[0]);
+    }
   }
 
   private generateDetails(detailEl: HTMLDivElement): void {

@@ -129,7 +129,7 @@ export default class Cliplet extends Plugin {
       return;
     }
     const decryptedContent = await this._service.decrypt(cliplet.content);
-    const pastedCliplet = pasteCliplet(editor, { ...cliplet, decryptedContent });
+    const pastedCliplet = await pasteCliplet(editor, { ...cliplet, decryptedContent });
     await this._service.putCliplet(pastedCliplet);
   }
 

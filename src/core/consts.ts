@@ -84,3 +84,21 @@ export const ACTION_MENU_ITEMS = [
     isDanger: true,
   },
 ];
+
+export const TOKEN = {
+  cursor: '{cursor}',
+  clipboard: '{clipboard}',
+};
+
+export const PLACEHOLDER_MENU_ITEMS = [
+  {
+    id: 'cursor',
+    text: 'Cursor position',
+    token: TOKEN.cursor,
+  },
+  {
+    id: 'clipboard',
+    text: 'Clipboard',
+    token: TOKEN.clipboard,
+  },
+];

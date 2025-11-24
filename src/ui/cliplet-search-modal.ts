@@ -3,12 +3,12 @@ import dayjs from 'dayjs';
 
 import Cliplet from '../main';
 import { ClipletService } from '../core/cliplet-service';
-import { ACTION_MENU_ITEMS, IS_APPLE, KEYS } from '../core/consts';
+import { ACTION_MENU_ITEMS, IS_APPLE, KEYS, TOKEN } from '../core/consts';
 import { ActionMenuItem, DecryptedClipletItem } from '../core/types';
 import { ActionMenuModal } from './action-menu-modal';
 import { ClipletConfirmModal } from './cliplet-confirm-modal';
 import { ClipletEditorModal } from './cliplet-editor-modal';
-import { pasteCliplet } from '../utils';
+import { escapeHtml, getClipboard, pasteCliplet, replaceWithHighlight } from '../utils';
 
 export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> {
   private _service: ClipletService;
@@ -22,6 +22,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
     created: null,
   };
   private _lastTappedClipletId: string = '';
+  private _clipboardText: string = '';
   private _preventClose = false;
 
   constructor(
@@ -53,6 +54,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
   async onOpen(): Promise<void> {
     super.onOpen();
 
+    this._clipboardText = await getClipboard();
     await this.getCliplets();
     const suggestionContainer = this.containerEl.querySelector('.prompt-results');
     if (suggestionContainer) {
@@ -69,7 +71,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
   }
 
   async onChooseItem(cliplet: DecryptedClipletItem): Promise<void> {
-    const pastedCliplet = pasteCliplet(this._editor, cliplet);
+    const pastedCliplet = await pasteCliplet(this._editor, cliplet, this._clipboardText);
     await this._service.putCliplet(pastedCliplet);
     this._plugin.settings.latestClipletId = pastedCliplet.id;
     await this._plugin.saveSettings();
@@ -97,24 +99,27 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
     item: FuzzyMatch<DecryptedClipletItem>,
     suggestionItemEl: HTMLElement,
   ): HTMLElement {
-    const cliplet = item.item;
-    const texts = cliplet.decryptedContent.split(/\r?\n/);
-    const viewText = texts.length === 1 ? cliplet.decryptedContent : `${texts[0]}...`;
-    const icon = cliplet.pinned ? 'pin' : cliplet.name ? 'tag' : 'clipboard';
-
     const doc = suggestionItemEl.ownerDocument;
-    const frag = doc.createDocumentFragment();
+    const fragment = doc.createDocumentFragment();
+    const cliplet = item.item;
 
     const iconWrap = doc.createElement('div');
     iconWrap.className = 'suggestion-item-icon';
+    const icon = cliplet.pinned ? 'pin' : cliplet.name ? 'tag' : 'clipboard';
     setIcon(iconWrap, icon);
 
     const textSpan = doc.createElement('span');
-    textSpan.textContent = cliplet.name || viewText;
+    if (cliplet.name) {
+      textSpan.textContent = cliplet.name;
+    } else {
+      const texts = cliplet.decryptedContent.split(/\r?\n/);
+      const viewText = texts.length === 1 ? cliplet.decryptedContent : `${texts[0]}...`;
+      this.setClipletContent(textSpan, viewText);
+    }
     textSpan.dataset.clipletId = cliplet.id;
 
-    frag.append(iconWrap, textSpan);
-    suggestionItemEl.replaceChildren(frag);
+    fragment.append(iconWrap, textSpan);
+    suggestionItemEl.replaceChildren(fragment);
     this.attachPointerHandler(suggestionItemEl);
     return suggestionItemEl;
   }
@@ -204,40 +209,62 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
     if (!content || !count || !lastUsed || !lastModified || !created) {
       return;
     }
-    if (cliplet) {
-      const lastUsedText = cliplet.lastUsed
-        ? dayjs.unix(cliplet.lastUsed).format('MMM D, YYYY [at] HH:mm:ss')
-        : '';
-      const lastModifiedText = cliplet.lastModified
-        ? dayjs.unix(cliplet.lastModified).format('MMM D, YYYY [at] HH:mm:ss')
-        : '';
 
-      content.textContent = cliplet.decryptedContent;
-      count.textContent = `${cliplet.count}`;
-      lastUsed.textContent = lastUsedText;
-      lastModified.textContent = lastModifiedText;
-      created.textContent = dayjs.unix(cliplet.created).format('MMM D, YYYY [at] HH:mm:ss');
+    content.empty();
+    count.empty();
+    lastUsed.empty();
+    lastModified.empty();
+    created.empty();
 
-      if (lastUsedText) {
-        lastUsed.parentElement?.removeClass('is-hidden');
-      } else {
-        lastUsed.parentElement?.addClass('is-hidden');
-      }
-      if (lastModifiedText) {
-        lastModified.parentElement?.removeClass('is-hidden');
-      } else {
-        lastModified.parentElement?.addClass('is-hidden');
-      }
-      if (!this._preventClose) {
-        this._lastTappedClipletId = cliplet.id;
-      }
-    } else {
+    if (!cliplet) {
       this._lastTappedClipletId = '';
-      content.empty();
-      count.empty();
-      lastUsed.empty();
-      lastModified.empty();
-      created.empty();
+      return;
+    }
+
+    const lastUsedText = cliplet.lastUsed
+      ? dayjs.unix(cliplet.lastUsed).format('MMM D, YYYY [at] HH:mm:ss')
+      : '';
+    const lastModifiedText = cliplet.lastModified
+      ? dayjs.unix(cliplet.lastModified).format('MMM D, YYYY [at] HH:mm:ss')
+      : '';
+
+    this.setClipletContent(content, cliplet.decryptedContent);
+    count.textContent = `${cliplet.count}`;
+    lastUsed.textContent = lastUsedText;
+    lastModified.textContent = lastModifiedText;
+    created.textContent = dayjs.unix(cliplet.created).format('MMM D, YYYY [at] HH:mm:ss');
+
+    if (lastUsedText) {
+      lastUsed.parentElement?.removeClass('is-hidden');
+    } else {
+      lastUsed.parentElement?.addClass('is-hidden');
+    }
+    if (lastModifiedText) {
+      lastModified.parentElement?.removeClass('is-hidden');
+    } else {
+      lastModified.parentElement?.addClass('is-hidden');
+    }
+    if (!this._preventClose) {
+      this._lastTappedClipletId = cliplet.id;
+    }
+  }
+
+  private setClipletContent(el: HTMLSpanElement, text: string): void {
+    const clipboardText = text.includes(TOKEN.clipboard) ? escapeHtml(this._clipboardText) : '';
+    const replacer = () => `<span class="cliplet-token-replaced">${clipboardText}</span>`;
+    const commonArgs = [TOKEN.clipboard, true, replacer] as const;
+
+    if (text.includes(TOKEN.cursor)) {
+      const tokenIndex = text.indexOf(TOKEN.cursor);
+      const before = text.slice(0, tokenIndex);
+      const after = text.slice(tokenIndex + TOKEN.cursor.length);
+      const replacedBefore = replaceWithHighlight(escapeHtml(before), ...commonArgs);
+      const replacedAfter = replaceWithHighlight(escapeHtml(after), ...commonArgs);
+      el.createSpan('', (beforeEl) => (beforeEl.innerHTML = replacedBefore));
+      el.createSpan('cliplet-token-cursor');
+      el.createSpan('', (afterEl) => (afterEl.innerHTML = replacedAfter));
+    } else {
+      el.innerHTML = replaceWithHighlight(escapeHtml(text), ...commonArgs);
     }
   }
 
@@ -387,13 +414,13 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
     const ref = this.modalEl;
     const right = `calc((100% - ${ref?.offsetWidth || 0}px) / 2 + 8px)`;
     const bottom = `calc(100% - (442px + ${ref?.offsetTop || 0}px))`;
-    modal.modalEl.style.setProperty('--cliplet-action-menu-modal-right', right);
-    modal.modalEl.style.setProperty('--cliplet-action-menu-modal-bottom', bottom);
+    modal.modalEl.style.setProperty('--cliplet-menu-modal-right', right);
+    modal.modalEl.style.setProperty('--cliplet-menu-modal-bottom', bottom);
 
     modal.open();
     modal.whenClosed().then(() => {
-      modal.modalEl.style.removeProperty('--cliplet-action-menu-modal-right');
-      modal.modalEl.style.removeProperty('--cliplet-action-menu-modal-bottom');
+      modal.modalEl.style.removeProperty('--cliplet-menu-modal-right');
+      modal.modalEl.style.removeProperty('--cliplet-menu-modal-bottom');
     });
   }
 

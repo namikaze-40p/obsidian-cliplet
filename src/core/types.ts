@@ -48,3 +48,9 @@ export interface ActionMenuItem {
   };
   isDanger: boolean;
 }
+
+export interface PlaceholderMenuItem {
+  id: string;
+  text: string;
+  token: string;
+}

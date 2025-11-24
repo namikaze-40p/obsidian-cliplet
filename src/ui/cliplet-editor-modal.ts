@@ -4,8 +4,10 @@ import { v4 as uuid } from 'uuid';
 
 import Cliplet from '../main';
 import { ClipletService } from '../core/cliplet-service';
-import { IS_APPLE, KEYS } from '../core/consts';
-import { ClipletItem, DecryptedClipletItem } from '../core/types';
+import { IS_APPLE, KEYS, PLACEHOLDER_MENU_ITEMS, TOKEN } from '../core/consts';
+import { ClipletItem, DecryptedClipletItem, PlaceholderMenuItem } from '../core/types';
+import { PlaceholderMenuModal } from './placeholder-menu-modal';
+import { escapeHtml, replaceWithHighlight } from '../utils';
 
 export class ClipletEditorModal extends Modal {
   private _service: ClipletService;
@@ -14,6 +16,8 @@ export class ClipletEditorModal extends Modal {
     content: '' as string,
   };
   private _resolveClose: (() => void) | null = null;
+  private _textarea = null as HTMLTextAreaElement | null;
+  private _textareaCursorPos = { start: 0, end: 0 };
 
   constructor(
     app: App,
@@ -51,7 +55,7 @@ export class ClipletEditorModal extends Modal {
           }),
       );
 
-    new Setting(this.contentEl)
+    const contentEl = new Setting(this.contentEl)
       .setName('Content')
       .setDesc('This content will be inserted when the cliplet is used.')
       .addTextArea((content) =>
@@ -62,6 +66,41 @@ export class ClipletEditorModal extends Modal {
             this._form.content = value;
           }),
       );
+
+    this._textarea = contentEl.controlEl.querySelector('textarea') as HTMLTextAreaElement;
+    this._textareaCursorPos.start = this._textarea.selectionStart;
+    this._textareaCursorPos.end = this._textarea.selectionEnd;
+    this._textarea.addEventListener('blur', () => {
+      const { selectionStart = 0, selectionEnd = 0 } = this._textarea || {};
+      this._textareaCursorPos.start = selectionStart;
+      this._textareaCursorPos.end = selectionEnd;
+    });
+    contentEl.controlEl.createDiv('cliplet-overlay-textarea', (overlayDiv) => {
+      overlayDiv.createDiv('', (textViewDiv) => {
+        const textarea = this._textarea as HTMLTextAreaElement;
+        textViewDiv.innerHTML = this.decorateText(textarea.value);
+
+        textarea.addEventListener('input', () => {
+          textViewDiv.innerHTML = this.decorateText(textarea.value);
+          textViewDiv.style.height = `${textarea.scrollHeight}px`;
+          overlayDiv.scrollTop = textarea.scrollTop;
+        });
+        textarea.addEventListener('scroll', () => (overlayDiv.scrollTop = textarea.scrollTop));
+      });
+    });
+
+    this.contentEl.createDiv('cliplet-placeholder', (div) => {
+      div.createEl('a', '', (aTag) => {
+        aTag.setText('About placeholders');
+        aTag.href =
+          'https://github.com/namikaze-40p/obsidian-cliplet?tab=readme-ov-file#about-placeholders';
+      });
+      new Setting(div).addButton((btn) => {
+        btn
+          .setButtonText('Insert placeholder { }')
+          .onClick(() => this.openPlaceholderMenuModal(btn.buttonEl));
+      });
+    });
 
     this.modalEl.createDiv('ce-modal-footer', (footerEl) => {
       footerEl.createSpan('').setText(this._cliplet ? 'Edit cliplet' : 'Create cliplet');
@@ -84,6 +123,58 @@ export class ClipletEditorModal extends Modal {
 
   whenClosed(): Promise<void> {
     return new Promise((resolve) => (this._resolveClose = resolve));
+  }
+
+  private openPlaceholderMenuModal(buttonEl: HTMLButtonElement): void {
+    const modal = new PlaceholderMenuModal(
+      this.app,
+      this.onSelectMenuItem.bind(this),
+      PLACEHOLDER_MENU_ITEMS,
+    );
+
+    const ref = buttonEl.getBoundingClientRect();
+    const right = `calc(100% - ${ref.left + ref.width}px)`;
+    const bottom = `calc(100% - ${ref.bottom - ref.height}px)`;
+    modal.modalEl.style.setProperty('--cliplet-menu-modal-right', right);
+    modal.modalEl.style.setProperty('--cliplet-menu-modal-bottom', bottom);
+
+    modal.open();
+    modal.whenClosed().then(() => {
+      modal.modalEl.style.removeProperty('--cliplet-menu-modal-right');
+      modal.modalEl.style.removeProperty('--cliplet-menu-modal-bottom');
+    });
+  }
+
+  private decorateText(text: string): string {
+    const items = [
+      { token: TOKEN.cursor, global: false },
+      { token: TOKEN.clipboard, global: true },
+    ];
+    const replacer = (_: string, inner: string) =>
+      `<span class="highlighted-token">{</span>${inner}<span class="highlighted-token">}</span>`;
+    return items.reduce((acc, item) => {
+      const tokenId = item.token.replace(/[{}]/g, '');
+      return replaceWithHighlight(acc, `{(${tokenId})}`, item.global, replacer);
+    }, escapeHtml(text));
+  }
+
+  private async onSelectMenuItem(item: PlaceholderMenuItem): Promise<void> {
+    this.insertAtCursorPosition(item.token);
+  }
+
+  private insertAtCursorPosition(insertText: string): void {
+    const textarea = this._textarea as HTMLTextAreaElement;
+    const { start, end } = this._textareaCursorPos;
+
+    const value = textarea.value;
+    const before = value.slice(0, start);
+    const after = value.slice(end);
+    textarea.value = before + insertText + after;
+
+    const newPos = before.length + insertText.length;
+    textarea.setSelectionRange(newPos, newPos);
+    textarea.dispatchEvent(new Event('input'));
+    textarea.focus();
   }
 
   private async saveCliplet(): Promise<void> {

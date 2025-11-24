@@ -54,6 +54,16 @@ This allows you to add, paste, and search cliplets quickly without leaving the k
 
 ![demo](https://raw.githubusercontent.com/namikaze-40p/obsidian-cliplet/main/demo/search.gif)
 
+## About placeholders
+
+Cliplet lets you insert dynamic values inside cliplet content.  
+Use the following placeholders when writing cliplets:
+
+| Placeholder   | Description　                                                                                           | Input example         | Output example                            |
+| ------------- | ------------------------------------------------------------------------------------------------------- | --------------------- | ----------------------------------------- |
+| `{cursor}`    | Moves the cursor to the **first** `{cursor}` found in the text. Any additional `{cursor}`s are ignored. | `Hello {cursor}world` | `Hello │world`                            |
+| `{clipboard}` | Inserts the current OS clipboard text at this point.                                                    | `Text: {clipboard}`   | `Text: apple`<br>(If clipboard = `apple`) |
+
 ## Installation
 
 You can find and install this plugin through Obsidian’s Community Plugins Browser.  

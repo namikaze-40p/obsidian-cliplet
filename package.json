@@ -1,6 +1,6 @@
 {
   "name": "obsidian-cliplet",
-  "version": "0.2.4",
+  "version": "0.3.0-beta.4",
   "description": "An Obsidian plugin that serves as a clipboard and snippet manager — your own, separate from the OS clipboard.",
   "main": "main.js",
   "scripts": {

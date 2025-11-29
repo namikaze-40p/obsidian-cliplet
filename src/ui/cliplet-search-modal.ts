@@ -5,7 +5,13 @@ import { ClipletService } from 'src/core/cliplet-service';
 import { ACTION_MENU_ITEMS, IS_APPLE, KEYS, TOKEN } from 'src/core/consts';
 import { ActionMenuItem, DecryptedClipletItem } from 'src/core/types';
 import Cliplet from 'src/main';
-import { escapeHtml, getClipboard, pasteCliplet, replaceWithHighlight } from 'src/utils';
+import {
+  copyToClipboard,
+  escapeHtml,
+  getClipboard,
+  pasteCliplet,
+  replaceWithHighlight,
+} from 'src/utils';
 
 import { ActionMenuModal } from './action-menu-modal';
 import { ClipletConfirmModal } from './cliplet-confirm-modal';
@@ -327,6 +333,12 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
       case 'paste':
         if (this._currentCliplet) {
           await this.onChooseItem(this._currentCliplet);
+          this.close();
+        }
+        return;
+      case 'toClipboard':
+        if (this._currentCliplet) {
+          await copyToClipboard(this._currentCliplet.decryptedContent);
           this.close();
         }
         return;

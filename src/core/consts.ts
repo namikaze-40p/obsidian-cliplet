@@ -24,6 +24,16 @@ export const ACTION_MENU_ITEMS = [
     isDanger: false,
   },
   {
+    id: 'toClipboard',
+    text: 'Copy to clipboard',
+    labels: [KEYS.mod, KEYS.enter],
+    command: {
+      key: 'Enter',
+      modifiers: [IS_APPLE ? 'Meta' : 'Ctrl'] as Modifier[],
+    },
+    isDanger: false,
+  },
+  {
     id: 'edit',
     text: 'Edit cliplet',
     labels: [KEYS.mod, 'E'],

@@ -4,15 +4,7 @@ import dayjs from 'dayjs';
 import { TOKEN } from 'src/core/consts';
 import { DecryptedClipletItem } from 'src/core/types';
 
-import { getClipboard } from './text-utils';
-
-const replaceWithClipboardText = async (
-  content: string,
-  clipboardText: string | null,
-): Promise<string> => {
-  const replaceText = clipboardText ?? (await getClipboard());
-  return content.replace(new RegExp(TOKEN.clipboard, 'g'), replaceText);
-};
+import { replaceWithClipboardText } from './text-utils';
 
 export const pasteCliplet = async (
   editor: Editor,

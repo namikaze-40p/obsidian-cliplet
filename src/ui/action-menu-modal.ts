@@ -85,6 +85,8 @@ export class ActionMenuModal extends FuzzySuggestModal<ActionMenuItem> {
     switch (menu.id) {
       case 'paste':
         return 'clipboard-paste';
+      case 'toClipboard':
+        return 'clipboard-copy';
       case 'edit':
         return 'pencil';
       case 'pin':

@@ -1,7 +1,7 @@
 import { deleteDB, IDBPDatabase } from 'idb';
 
-import crypto from './crypto';
 import { ClipletStoreIdb } from './cliplet-store-idb';
+import crypto from './crypto';
 import { ClipletDBSchema, getDbPromise } from './database';
 import { ClipletItem, IClipletServiceBackend } from './types';
 

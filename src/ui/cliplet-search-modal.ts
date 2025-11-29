@@ -1,14 +1,15 @@
 import { App, Editor, FuzzyMatch, FuzzySuggestModal, Modifier, Notice, setIcon } from 'obsidian';
 import dayjs from 'dayjs';
 
-import Cliplet from '../main';
-import { ClipletService } from '../core/cliplet-service';
-import { ACTION_MENU_ITEMS, IS_APPLE, KEYS, TOKEN } from '../core/consts';
-import { ActionMenuItem, DecryptedClipletItem } from '../core/types';
+import { ClipletService } from 'src/core/cliplet-service';
+import { ACTION_MENU_ITEMS, IS_APPLE, KEYS, TOKEN } from 'src/core/consts';
+import { ActionMenuItem, DecryptedClipletItem } from 'src/core/types';
+import Cliplet from 'src/main';
+import { escapeHtml, getClipboard, pasteCliplet, replaceWithHighlight } from 'src/utils';
+
 import { ActionMenuModal } from './action-menu-modal';
 import { ClipletConfirmModal } from './cliplet-confirm-modal';
 import { ClipletEditorModal } from './cliplet-editor-modal';
-import { escapeHtml, getClipboard, pasteCliplet, replaceWithHighlight } from '../utils';
 
 export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> {
   private _service: ClipletService;

@@ -1,6 +1,7 @@
 import dayjs from 'dayjs';
 
 import Cliplet from 'src/main';
+
 import { ClipletItem } from './types';
 
 const setProp = <T, K extends keyof T>(obj: T, key: K, value: T[K]) => {

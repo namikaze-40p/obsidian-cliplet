@@ -1,4 +1,5 @@
 import Cliplet from 'src/main';
+
 import { ClipletServiceIdb } from './cliplet-service-idb';
 import { ClipletServiceJson } from './cliplet-service-json';
 import { ClipletItem, IClipletServiceBackend, StorageType } from './types';

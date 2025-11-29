@@ -1,5 +1,5 @@
-import { IDBPDatabase } from 'idb';
 import dayjs from 'dayjs';
+import { IDBPDatabase } from 'idb';
 
 import { ClipletDBSchema } from './database';
 import { ClipletItem } from './types';

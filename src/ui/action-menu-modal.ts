@@ -1,7 +1,7 @@
 import { App, FuzzyMatch, FuzzySuggestModal, Modifier, setIcon } from 'obsidian';
 
-import { ActionMenuItem } from '../core/types';
 import { IS_APPLE } from 'src/core/consts';
+import { ActionMenuItem } from 'src/core/types';
 
 export class ActionMenuModal extends FuzzySuggestModal<ActionMenuItem> {
   private _resolveClose: (() => void) | null = null;

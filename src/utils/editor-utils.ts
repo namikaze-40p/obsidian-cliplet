@@ -1,8 +1,9 @@
 import { Editor } from 'obsidian';
 import dayjs from 'dayjs';
 
-import { DecryptedClipletItem } from '../core/types';
-import { TOKEN } from '../core/consts';
+import { TOKEN } from 'src/core/consts';
+import { DecryptedClipletItem } from 'src/core/types';
+
 import { getClipboard } from './text-utils';
 
 const replaceWithClipboardText = async (

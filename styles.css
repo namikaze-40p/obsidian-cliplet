@@ -246,10 +246,6 @@ body.theme-dark .cliplet-legend-label {
           position: absolute;
           background: transparent;
           color: transparent;
-
-          &::selection {
-            text-decoration: underline var(--text-normal);
-          }
         }
 
         > .cliplet-overlay-textarea {
@@ -257,10 +253,6 @@ body.theme-dark .cliplet-legend-label {
           pointer-events: none;
           text-align: left;
           overflow: hidden;
-
-          &::selection {
-            background-color: transparent !important;
-          }
 
           .highlighted-token {
             color: var(--cliplet-token);

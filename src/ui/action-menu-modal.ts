@@ -86,13 +86,13 @@ export class ActionMenuModal extends FuzzySuggestModal<ActionMenuItem> {
       case 'paste':
         return 'clipboard-paste';
       case 'edit':
-        return 'square-pen';
+        return 'pencil';
       case 'pin':
         return 'pin';
       case 'unpin':
         return 'pin-off';
       case 'create':
-        return 'clipboard';
+        return 'circle-plus';
       case 'delete':
       case 'deleteResults':
         return 'trash-2';

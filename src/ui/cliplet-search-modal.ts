@@ -131,6 +131,12 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
     return suggestionItemEl;
   }
 
+  onNoSuggestion() {
+    super.onNoSuggestion();
+
+    this.updateDetailView(null);
+  }
+
   private async getCliplets(): Promise<void> {
     const cliplets = await this._service.getAllCliplets();
     this._cliplets = await Promise.all(
@@ -442,7 +448,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
       const hideItemId = this._currentCliplet.pinned ? 'pin' : 'unpin';
       return ACTION_MENU_ITEMS.filter((item) => item.id !== hideItemId);
     } else {
-      const hideItemIds = ['paste', 'edit', 'pin', 'unpin', 'delete'];
+      const hideItemIds = ['paste', 'toClipboard', 'edit', 'pin', 'unpin', 'delete'];
       if (!this.getFilteredCliplets().length) {
         hideItemIds.push('deleteResults');
       }

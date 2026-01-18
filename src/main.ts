@@ -61,20 +61,15 @@ export default class Cliplet extends Plugin {
       await this.saveSettings();
     }
 
+    if (this.settings.pluginVersion !== this.manifest.version) {
+      this.settings.pluginVersion = this.manifest.version;
+      await this.saveSettings();
+    }
+
     this.app.workspace.onLayoutReady(async () => {
       const storageType = this.settings.storageType;
       this._service = new ClipletService(this.settings.vaultId, this, storageType);
       await this._service.init();
-
-      // FIXME(remove in 2026-01): temporary code for migration
-      if (!this.settings.pluginVersion) {
-        await this._service.deleteDB();
-      }
-
-      if (this.settings.pluginVersion !== this.manifest.version) {
-        this.settings.pluginVersion = this.manifest.version;
-        await this.saveSettings();
-      }
 
       this._settingTab = new SettingTab(this.app, this);
       this.addSettingTab(this._settingTab);

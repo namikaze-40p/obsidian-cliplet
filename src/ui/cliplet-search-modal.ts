@@ -5,13 +5,7 @@ import { ClipletService } from 'src/core/cliplet-service';
 import { ACTION_MENU_ITEMS, IS_APPLE, KEYS, TOKEN } from 'src/core/consts';
 import { ActionMenuItem, DecryptedClipletItem } from 'src/core/types';
 import Cliplet from 'src/main';
-import {
-  copyToClipboard,
-  escapeHtml,
-  getClipboard,
-  pasteCliplet,
-  replaceWithHighlight,
-} from 'src/utils';
+import { copyToClipboard, getClipboard, pasteCliplet } from 'src/utils';
 
 import { ActionMenuModal } from './action-menu-modal';
 import { ClipletConfirmModal } from './cliplet-confirm-modal';
@@ -263,22 +257,28 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
   }
 
   private setClipletContent(el: HTMLSpanElement, text: string): void {
-    const clipboardText = text.includes(TOKEN.clipboard) ? escapeHtml(this._clipboardText) : '';
-    const replacer = () => `<span class="cliplet-token-replaced">${clipboardText}</span>`;
-    const commonArgs = [TOKEN.clipboard, true, replacer] as const;
-
     if (text.includes(TOKEN.cursor)) {
       const tokenIndex = text.indexOf(TOKEN.cursor);
       const before = text.slice(0, tokenIndex);
       const after = text.slice(tokenIndex + TOKEN.cursor.length);
-      const replacedBefore = replaceWithHighlight(escapeHtml(before), ...commonArgs);
-      const replacedAfter = replaceWithHighlight(escapeHtml(after), ...commonArgs);
-      el.createSpan('', (beforeEl) => (beforeEl.innerHTML = replacedBefore));
+      this.renderWithClipboardReplacement(el.createSpan(''), before);
       el.createSpan('cliplet-token-cursor');
-      el.createSpan('', (afterEl) => (afterEl.innerHTML = replacedAfter));
+      this.renderWithClipboardReplacement(el.createSpan(''), after);
     } else {
-      el.innerHTML = replaceWithHighlight(escapeHtml(text), ...commonArgs);
+      this.renderWithClipboardReplacement(el, text);
     }
+  }
+
+  private renderWithClipboardReplacement(container: HTMLElement, text: string): void {
+    const parts = text.split(TOKEN.clipboard);
+    parts.forEach((part, i) => {
+      if (part) {
+        container.appendChild(document.createTextNode(part));
+      }
+      if (i < parts.length - 1) {
+        container.createSpan({ cls: 'cliplet-token-replaced', text: this._clipboardText });
+      }
+    });
   }
 
   private generateFooter(contentEl: HTMLElement): void {

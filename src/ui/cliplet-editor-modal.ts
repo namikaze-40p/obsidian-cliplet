@@ -6,7 +6,6 @@ import { ClipletService } from 'src/core/cliplet-service';
 import { IS_APPLE, KEYS, PLACEHOLDER_MENU_ITEMS, TOKEN } from 'src/core/consts';
 import { ClipletItem, DecryptedClipletItem, PlaceholderMenuItem } from 'src/core/types';
 import Cliplet from 'src/main';
-import { escapeHtml, replaceWithHighlight } from 'src/utils';
 
 import { PlaceholderMenuModal } from './placeholder-menu-modal';
 
@@ -79,10 +78,10 @@ export class ClipletEditorModal extends Modal {
     contentEl.controlEl.createDiv('cliplet-overlay-textarea', (overlayDiv) => {
       overlayDiv.createDiv('', (textViewDiv) => {
         const textarea = this._textarea as HTMLTextAreaElement;
-        textViewDiv.innerHTML = this.decorateText(textarea.value);
+        this.renderDecoratedText(textViewDiv, textarea.value);
 
         textarea.addEventListener('input', () => {
-          textViewDiv.innerHTML = this.decorateText(textarea.value);
+          this.renderDecoratedText(textViewDiv, textarea.value);
           textViewDiv.style.height = `${textarea.scrollHeight}px`;
           overlayDiv.scrollTop = textarea.scrollTop;
         });
@@ -146,17 +145,47 @@ export class ClipletEditorModal extends Modal {
     });
   }
 
-  private decorateText(text: string): string {
-    const items = [
+  private renderDecoratedText(container: HTMLElement, text: string): void {
+    container.empty();
+
+    type TokenMatch = { start: number; end: number; innerText: string };
+
+    const tokenRules = [
       { token: TOKEN.cursor, global: false },
       { token: TOKEN.clipboard, global: true },
     ];
-    const replacer = (_: string, inner: string) =>
-      `<span class="highlighted-token">{</span>${inner}<span class="highlighted-token">}</span>`;
-    return items.reduce((acc, item) => {
-      const tokenId = item.token.replace(/[{}]/g, '');
-      return replaceWithHighlight(acc, `{(${tokenId})}`, item.global, replacer);
-    }, escapeHtml(text));
+
+    const tokenMatches: TokenMatch[] = tokenRules.flatMap((rule) => {
+      const tokenId = rule.token.replace(/[{}]/g, '');
+      const regex = new RegExp(`\\{(${tokenId})\\}`, 'g');
+      const allMatches = [...text.matchAll(regex)];
+      const relevantMatches = rule.global ? allMatches : allMatches.slice(0, 1);
+      return relevantMatches.map((match) => ({
+        start: match.index!,
+        end: match.index! + match[0].length,
+        innerText: match[1],
+      }));
+    });
+
+    tokenMatches.sort((a, b) => a.start - b.start);
+
+    let cursor = 0;
+    for (const match of tokenMatches) {
+      if (match.start < cursor) {
+        continue;
+      }
+      if (match.start > cursor) {
+        container.appendChild(document.createTextNode(text.slice(cursor, match.start)));
+      }
+      container.createSpan({ cls: 'highlighted-token', text: '{' });
+      container.appendChild(document.createTextNode(match.innerText));
+      container.createSpan({ cls: 'highlighted-token', text: '}' });
+      cursor = match.end;
+    }
+
+    if (cursor < text.length) {
+      container.appendChild(document.createTextNode(text.slice(cursor)));
+    }
   }
 
   private async onSelectMenuItem(item: PlaceholderMenuItem): Promise<void> {

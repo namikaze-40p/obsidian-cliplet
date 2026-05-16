@@ -73,7 +73,7 @@
       }
 
       .cliplet-keyword-label {
-        background-color: color-mix(in srgb, var(--background-primary) 60%, #aaa);
+        background-color: color-mix(in srgb, var(--background-primary) 60%, #aaaaaa);
         padding: 0.125rem 0.25rem;
         border-radius: 4px;
       }
@@ -185,13 +185,13 @@
 
 body.theme-light .cliplet-legend-label {
   box-shadow:
-    2px 2px 2px color-mix(in srgb, var(--background-primary) 70%, #000),
-    -2px -2px 2px color-mix(in srgb, var(--background-primary) 40%, #eee);
+    2px 2px 2px color-mix(in srgb, var(--background-primary) 70%, #000000),
+    -2px -2px 2px color-mix(in srgb, var(--background-primary) 40%, #eeeeee);
 }
 body.theme-dark .cliplet-legend-label {
   box-shadow:
-    2px 2px 2px color-mix(in srgb, var(--background-primary) 50%, #000),
-    -2px -2px 2px color-mix(in srgb, var(--background-primary) 85%, #eee);
+    2px 2px 2px color-mix(in srgb, var(--background-primary) 50%, #000000),
+    -2px -2px 2px color-mix(in srgb, var(--background-primary) 85%, #eeeeee);
 }
 
 .cliplet-editor-modal.ce-modal {

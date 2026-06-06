@@ -164,8 +164,8 @@ export class ClipletEditorModal extends Modal {
       const allMatches = [...text.matchAll(regex)];
       const relevantMatches = rule.global ? allMatches : allMatches.slice(0, 1);
       return relevantMatches.map((match) => ({
-        start: match.index!,
-        end: match.index! + match[0].length,
+        start: match.index,
+        end: match.index + match[0].length,
         innerText: match[1],
       }));
     });

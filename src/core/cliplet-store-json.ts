@@ -33,7 +33,7 @@ export class ClipletStoreJson {
   }
 
   async list(): Promise<ClipletItem[]> {
-    return structuredClone(this._cliplets) as ClipletItem[];
+    return structuredClone(this._cliplets);
   }
 
   async add(value: ClipletItem): Promise<string> {

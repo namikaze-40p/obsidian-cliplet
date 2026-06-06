@@ -2,6 +2,7 @@ import { App, FuzzyMatch, FuzzySuggestModal, Modifier, setIcon } from 'obsidian'
 
 import { IS_APPLE } from 'src/core/consts';
 import { ActionMenuItem } from 'src/core/types';
+import { onClipletModalClose, onClipletModalOpen } from 'src/utils';
 
 export class ActionMenuModal extends FuzzySuggestModal<ActionMenuItem> {
   private _resolveClose: (() => void) | null = null;
@@ -19,7 +20,15 @@ export class ActionMenuModal extends FuzzySuggestModal<ActionMenuItem> {
     this.registerShortcutKeys();
   }
 
+  onOpen(): void {
+    super.onOpen();
+    onClipletModalOpen();
+    document.body.classList.add('cliplet-action-menu-open');
+  }
+
   onClose(): void {
+    onClipletModalClose();
+    document.body.classList.remove('cliplet-action-menu-open');
     if (this._resolveClose) {
       this._resolveClose();
     }

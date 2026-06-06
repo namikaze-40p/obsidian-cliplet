@@ -6,6 +6,7 @@ import { ClipletService } from 'src/core/cliplet-service';
 import { IS_APPLE, KEYS, PLACEHOLDER_MENU_ITEMS, TOKEN } from 'src/core/consts';
 import { ClipletItem, DecryptedClipletItem, PlaceholderMenuItem } from 'src/core/types';
 import Cliplet from 'src/main';
+import { onClipletModalClose, onClipletModalOpen } from 'src/utils';
 
 import { PlaceholderMenuModal } from './placeholder-menu-modal';
 
@@ -36,6 +37,7 @@ export class ClipletEditorModal extends Modal {
   }
 
   onOpen(): void {
+    onClipletModalOpen();
     this.modalEl.addClasses(['cliplet-editor-modal', 'ce-modal']);
 
     if (this._cliplet) {
@@ -116,6 +118,7 @@ export class ClipletEditorModal extends Modal {
   }
 
   onClose(): void {
+    onClipletModalClose();
     if (this._resolveClose) {
       this._resolveClose();
     }

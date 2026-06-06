@@ -1,5 +1,7 @@
 import { App, Modal, Setting } from 'obsidian';
 
+import { onClipletModalClose, onClipletModalOpen } from 'src/utils';
+
 export class ClipletConfirmModal extends Modal {
   private _resolveClose: (() => void) | null = null;
 
@@ -12,6 +14,7 @@ export class ClipletConfirmModal extends Modal {
   }
 
   onOpen(): void {
+    onClipletModalOpen();
     this.modalEl.addClasses(['cliplet-confirm-modal', 'cc-modal']);
 
     this.contentEl.createDiv('', (el) => {
@@ -37,6 +40,7 @@ export class ClipletConfirmModal extends Modal {
   }
 
   onClose(): void {
+    onClipletModalClose();
     if (this._resolveClose) {
       this._resolveClose();
     }

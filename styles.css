@@ -11,17 +11,12 @@
   --cliplet-token-replaced: #00b828;
 }
 
-.modal-container.mod-dim {
-  &:has(.cliplet-search-modal),
-  &:has(.cliplet-editor-modal),
-  &:has(.cliplet-confirm-modal),
-  &:has(.cliplet-action-menu-modal) {
-    opacity: 1 !important;
-  }
+body.cliplet-modal-open .modal-container.mod-dim {
+  opacity: 1 !important;
+}
 
-  &:has(.cliplet-action-menu-modal) .modal-bg {
-    opacity: 0 !important;
-  }
+body.cliplet-action-menu-open .modal-container.mod-dim .modal-bg {
+  opacity: 0 !important;
 }
 
 .cliplet-search-modal.cs-modal.prompt {
@@ -409,7 +404,7 @@ body.is-phone {
     }
   }
 
-  .modal-container.mod-dim:has(.cliplet-action-menu-modal.ca-modal.prompt)
+  &.cliplet-action-menu-open .modal-container.mod-dim
     .cliplet-action-menu-modal.ca-modal.prompt {
     right: 0;
     margin-right: 0;

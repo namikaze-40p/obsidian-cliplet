@@ -178,16 +178,16 @@ export class ClipletEditorModal extends Modal {
         continue;
       }
       if (match.start > cursor) {
-        container.appendChild(document.createTextNode(text.slice(cursor, match.start)));
+        container.appendChild(activeDocument.createTextNode(text.slice(cursor, match.start)));
       }
       container.createSpan({ cls: 'highlighted-token', text: '{' });
-      container.appendChild(document.createTextNode(match.innerText));
+      container.appendChild(activeDocument.createTextNode(match.innerText));
       container.createSpan({ cls: 'highlighted-token', text: '}' });
       cursor = match.end;
     }
 
     if (cursor < text.length) {
-      container.appendChild(document.createTextNode(text.slice(cursor)));
+      container.appendChild(activeDocument.createTextNode(text.slice(cursor)));
     }
   }
 

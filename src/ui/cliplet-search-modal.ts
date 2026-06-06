@@ -280,7 +280,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
     const parts = text.split(TOKEN.clipboard);
     parts.forEach((part, i) => {
       if (part) {
-        container.appendChild(document.createTextNode(part));
+        container.appendChild(activeDocument.createTextNode(part));
       }
       if (i < parts.length - 1) {
         container.createSpan({ cls: 'cliplet-token-replaced', text: this._clipboardText });

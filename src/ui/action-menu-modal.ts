@@ -23,12 +23,12 @@ export class ActionMenuModal extends FuzzySuggestModal<ActionMenuItem> {
   onOpen(): void {
     super.onOpen();
     onClipletModalOpen();
-    document.body.classList.add('cliplet-action-menu-open');
+    activeDocument.body.classList.add('cliplet-action-menu-open');
   }
 
   onClose(): void {
     onClipletModalClose();
-    document.body.classList.remove('cliplet-action-menu-open');
+    activeDocument.body.classList.remove('cliplet-action-menu-open');
     if (this._resolveClose) {
       this._resolveClose();
     }

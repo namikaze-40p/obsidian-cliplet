@@ -58,7 +58,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
 
   async onOpen(): Promise<void> {
     onClipletModalOpen();
-    super.onOpen();
+    void super.onOpen();
 
     this._clipboardText = await getClipboard();
     await this.getCliplets();
@@ -91,13 +91,13 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
 
     // Case: KeyboardEvent(Enter key) or Mouse click
     if ((ev instanceof KeyboardEvent && ev.code === 'Enter') || !this._lastTappedClipletId) {
-      this.onChooseItem(cliplet);
+      void this.onChooseItem(cliplet);
       return;
     }
 
     // Case: Touch or Pen input
     if (this._lastTappedClipletId === cliplet.id) {
-      this.onChooseItem(cliplet);
+      void this.onChooseItem(cliplet);
     } else {
       this._lastTappedClipletId = cliplet.id;
     }
@@ -299,7 +299,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
           el.createDiv('cliplet-legend-label').setText(KEYS.enter);
           el.addEventListener('click', () => {
             if (this._currentCliplet) {
-              this.onChooseItem(this._currentCliplet);
+              void this.onChooseItem(this._currentCliplet);
               this.close();
             }
           });
@@ -331,7 +331,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
           item.command.modifiers,
           item.command.key,
           (ev) => {
-            this.onSelectMenuItem(item);
+            void this.onSelectMenuItem(item);
             ev.stopPropagation();
             ev.preventDefault();
           },
@@ -419,7 +419,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
     modal.modalEl.style.setProperty('--cliplet-editor-modal-width', `${ref.offsetWidth}px`);
 
     modal.open();
-    modal.whenClosed().then(async () => {
+    void modal.whenClosed().then(async () => {
       await this.getCliplets();
       modal.modalEl.style.removeProperty('--cliplet-editor-modal-top');
       modal.modalEl.style.removeProperty('--cliplet-editor-modal-height');
@@ -430,7 +430,9 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
   private openConfirmModal(callback: () => Promise<void>, message: string): void {
     const modal = new ClipletConfirmModal(this.app, callback, message);
     modal.open();
-    void modal.whenClosed().then(() => this.getCliplets());
+    void modal.whenClosed().then(async () => {
+      await this.getCliplets();
+    });
   }
 
   private openActionMenuModal(): void {
@@ -444,7 +446,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
     modal.modalEl.style.setProperty('--cliplet-menu-modal-bottom', bottom);
 
     modal.open();
-    modal.whenClosed().then(() => {
+    void modal.whenClosed().then(() => {
       modal.modalEl.style.removeProperty('--cliplet-menu-modal-right');
       modal.modalEl.style.removeProperty('--cliplet-menu-modal-bottom');
     });

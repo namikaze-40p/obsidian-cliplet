@@ -80,7 +80,7 @@ export class ClipletStoreIdb {
 
       const latest = Math.max(record.created, record.lastUsed, record.lastModified);
       if (latest < threshold) {
-        cursor.delete();
+        await cursor.delete();
       }
     }
 

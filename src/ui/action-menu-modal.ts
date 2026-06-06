@@ -21,7 +21,7 @@ export class ActionMenuModal extends FuzzySuggestModal<ActionMenuItem> {
   }
 
   onOpen(): void {
-    super.onOpen();
+    void super.onOpen();
     onClipletModalOpen();
     activeDocument.body.classList.add('cliplet-action-menu-open');
   }

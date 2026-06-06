@@ -74,8 +74,8 @@ export default class Cliplet extends Plugin {
       this._settingTab = new SettingTab(this.app, this);
       this.addSettingTab(this._settingTab);
 
-      this.deleteExceededRecords();
-      this.deleteOverdueRecords();
+      void this.deleteExceededRecords();
+      void this.deleteOverdueRecords();
     });
   }
 

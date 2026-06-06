@@ -142,7 +142,7 @@ export class ClipletEditorModal extends Modal {
     modal.modalEl.style.setProperty('--cliplet-menu-modal-bottom', bottom);
 
     modal.open();
-    modal.whenClosed().then(() => {
+    void modal.whenClosed().then(() => {
       modal.modalEl.style.removeProperty('--cliplet-menu-modal-right');
       modal.modalEl.style.removeProperty('--cliplet-menu-modal-bottom');
     });

@@ -76,12 +76,14 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
     return [cliplet.name, cliplet.decryptedContent].join(' ');
   }
 
-  async onChooseItem(cliplet: DecryptedClipletItem): Promise<void> {
-    const pastedCliplet = await pasteCliplet(this._editor, cliplet, this._clipboardText);
-    await this._service.putCliplet(pastedCliplet);
-    this._plugin.settings.latestClipletId = pastedCliplet.id;
-    await this._plugin.saveSettings();
-    this._lastTappedClipletId = '';
+  onChooseItem(cliplet: DecryptedClipletItem): void {
+    void (async () => {
+      const pastedCliplet = await pasteCliplet(this._editor, cliplet, this._clipboardText);
+      await this._service.putCliplet(pastedCliplet);
+      this._plugin.settings.latestClipletId = pastedCliplet.id;
+      await this._plugin.saveSettings();
+      this._lastTappedClipletId = '';
+    })();
   }
 
   onChooseSuggestion(item: FuzzyMatch<DecryptedClipletItem>, ev: MouseEvent | KeyboardEvent): void {
@@ -343,7 +345,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
     switch (item.id) {
       case 'paste':
         if (this._currentCliplet) {
-          await this.onChooseItem(this._currentCliplet);
+          this.onChooseItem(this._currentCliplet);
           this.close();
         }
         return;

@@ -1,4 +1,4 @@
-const orgCrypto = globalThis.crypto;
+const orgCrypto = window.crypto;
 const { subtle } = orgCrypto;
 const getRandomValues = orgCrypto.getRandomValues.bind(orgCrypto);
 const encoder = new TextEncoder();

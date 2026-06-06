@@ -46,9 +46,9 @@ Both options work entirely offline and keep your data private (content is encryp
 For the best experience, assign hotkeys to Cliplet commands in Obsidian’s settings.  
 This allows you to add, paste, and search cliplets quickly without leaving the keyboard.
 
-1. Add a cliplet: Run the “Add cliplet” command after selecting text.
-1. Paste the latest cliplet: Run the “Paste latest cliplet” command.
-1. Search cliplets: Run the “Search cliplet” command to find, then paste or edit the desired cliplet.
+1. Add a cliplet: Run the “Add” command after selecting text.
+1. Paste the latest cliplet: Run the “Paste latest” command.
+1. Search cliplets: Run the “Search” command to find, then paste or edit the desired cliplet.
 
 ![demo](https://raw.githubusercontent.com/namikaze-40p/obsidian-cliplet/main/demo/add-and-paste.gif)
 

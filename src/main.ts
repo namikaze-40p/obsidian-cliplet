@@ -31,7 +31,7 @@ export default class Cliplet extends Plugin {
 
     this.addCommand({
       id: 'add-cliplet',
-      name: 'Add cliplet',
+      name: 'Add',
       editorCheckCallback: (checking: boolean, editor: Editor): boolean => {
         const content = editor.getSelection();
         if (checking) {
@@ -46,13 +46,13 @@ export default class Cliplet extends Plugin {
 
     this.addCommand({
       id: 'paste-latest-cliplet',
-      name: 'Paste latest cliplet',
+      name: 'Paste latest',
       editorCallback: (editor) => this.pasteLatestCliplet(editor),
     });
 
     this.addCommand({
       id: 'search-cliplet',
-      name: 'Search cliplet',
+      name: 'Search',
       editorCallback: (editor) => this.searchCliplet(editor),
     });
 

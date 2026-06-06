@@ -428,7 +428,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
   private openConfirmModal(callback: () => Promise<void>, message: string): void {
     const modal = new ClipletConfirmModal(this.app, callback, message);
     modal.open();
-    modal.whenClosed().then(async () => await this.getCliplets());
+    void modal.whenClosed().then(() => this.getCliplets());
   }
 
   private openActionMenuModal(): void {

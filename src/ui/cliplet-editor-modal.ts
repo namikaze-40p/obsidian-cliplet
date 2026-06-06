@@ -111,7 +111,7 @@ export class ClipletEditorModal extends Modal {
           el.createSpan().setText('Save cliplet');
           el.createDiv('cliplet-legend-label').setText(KEYS.mod);
           el.createDiv('cliplet-legend-label').setText(KEYS.enter);
-          el.addEventListener('click', async () => await this.saveCliplet());
+          el.addEventListener('click', () => { void this.saveCliplet(); });
         });
       });
     });

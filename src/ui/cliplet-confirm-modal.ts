@@ -7,7 +7,7 @@ export class ClipletConfirmModal extends Modal {
 
   constructor(
     app: App,
-    private _callback: () => void,
+    private _callback: () => void | Promise<void>,
     private _message: string,
   ) {
     super(app);
@@ -32,7 +32,7 @@ export class ClipletConfirmModal extends Modal {
         buttonEl.setClass('mod-warning');
         buttonEl.setButtonText('Delete');
         buttonEl.onClick(() => {
-          this._callback();
+          void this._callback();
           this.close();
         });
       });

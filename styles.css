@@ -182,7 +182,7 @@ body.theme-dark .cliplet-legend-label {
 }
 
 .cliplet-editor-modal.ce-modal {
-  padding: 1rem 0 0 0;
+  padding: 0;
   position: absolute;
   display: grid;
   grid-template-columns: 100%;
@@ -250,18 +250,14 @@ body.theme-dark .cliplet-legend-label {
 
     .cliplet-placeholder {
       position: relative;
-      top: -1.2rem;
+      top: -0.5rem;
       display: flex;
       justify-content: flex-end;
       gap: 1rem;
       align-items: center;
 
-      > a {
-        position: relative;
-        top: 8px;
-      }
-
       > .setting-item {
+        padding-top: 0;
         border-top: none;
       }
     }

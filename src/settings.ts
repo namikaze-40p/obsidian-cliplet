@@ -1,4 +1,4 @@
-import { App, ButtonComponent, Notice, PluginSettingTab, Setting } from 'obsidian';
+import { App, ButtonComponent, Notice, PluginSettingTab, Setting, TextComponent } from 'obsidian';
 
 import Cliplet from './main';
 import { ClipletItem, StorageType } from './core/types';
@@ -28,6 +28,7 @@ export const DEFAULT_SETTINGS: Settings = {
 
 export class SettingTab extends PluginSettingTab {
   private _service: ClipletService;
+  private _deleteText: TextComponent;
   private _deleteBtn: ButtonComponent;
 
   constructor(
@@ -71,7 +72,8 @@ export class SettingTab extends PluginSettingTab {
       .setDesc(
         'Delete all data of "Cliplet". If you want to delete, type "Delete" in the text box and click the "Delete" button.',
       )
-      .addText((text) =>
+      .addText((text) => {
+        this._deleteText = text;
         text
           .setPlaceholder('Delete')
           .onChange((value) => {
@@ -80,9 +82,10 @@ export class SettingTab extends PluginSettingTab {
             } else {
               this._deleteBtn.setDisabled(true);
             }
-          })
-          .inputEl.addClass('ct-delete-input'),
-      )
+          });
+        text.inputEl.addClass('ct-delete-input');
+        return text;
+      })
       .addButton((button) => {
         this._deleteBtn = button;
         return button
@@ -93,7 +96,8 @@ export class SettingTab extends PluginSettingTab {
             new Notice(DELETE_SUCCESS_MESSAGE);
             this._plugin.settings.latestClipletId = '';
             await this._plugin.saveData(this._plugin.settings);
-            this.display();
+            this._deleteText.setValue('');
+            this._deleteBtn.setDisabled(true);
           });
       });
   }

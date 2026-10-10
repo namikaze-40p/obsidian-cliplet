@@ -15,12 +15,9 @@ const MESSAGE = {
 
 export default class Cliplet extends Plugin {
   private _service: ClipletService;
-  private _settings: Settings;
   private _settingTab: SettingTab;
 
-  get settings(): Settings {
-    return this._settings;
-  }
+  declare settings: Settings;
 
   get service(): ClipletService {
     return this._service;
@@ -84,7 +81,7 @@ export default class Cliplet extends Plugin {
   }
 
   async loadSettings(): Promise<void> {
-    this._settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
   }
 
   async saveSettings(): Promise<void> {

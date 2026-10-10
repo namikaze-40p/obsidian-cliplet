@@ -28,8 +28,8 @@ export const DEFAULT_SETTINGS: Settings = {
 
 export class SettingTab extends PluginSettingTab {
   private _service: ClipletService;
-  private _deleteText: TextComponent;
-  private _deleteBtn: ButtonComponent;
+  private _deleteText!: TextComponent;
+  private _deleteBtn!: ButtonComponent;
 
   constructor(
     private _app: App,

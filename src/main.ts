@@ -14,8 +14,8 @@ const MESSAGE = {
 };
 
 export default class Cliplet extends Plugin {
-  private _service: ClipletService;
-  private _settingTab: SettingTab;
+  private _service!: ClipletService;
+  private _settingTab!: SettingTab;
 
   declare settings: Settings;
 

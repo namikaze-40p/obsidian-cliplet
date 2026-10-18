@@ -1,10 +1,20 @@
-import { Editor } from 'obsidian';
+import { Editor, EditorPosition } from 'obsidian';
 import dayjs from 'dayjs';
 
 import { TOKEN } from 'src/core/consts';
 import { DecryptedClipletItem } from 'src/core/types';
 
 import { replaceWithClipboardText } from './text-utils';
+
+// Returns the position right after `text` when it is inserted at `from`.
+// Line breaks are split the same way as CodeMirror (\r\n, \r, \n).
+const getEndPosition = (from: EditorPosition, text: string): EditorPosition => {
+  const lines = text.split(/\r\n?|\n/);
+  const lastLine = lines[lines.length - 1];
+  return lines.length === 1
+    ? { line: from.line, ch: from.ch + lastLine.length }
+    : { line: from.line + lines.length - 1, ch: lastLine.length };
+};
 
 export const pasteCliplet = async (
   editor: Editor,
@@ -20,7 +30,7 @@ export const pasteCliplet = async (
   if (tokenIndex === -1) {
     const replacedContent = await replaceWithClipboardText(content, clipboardText);
     editor.replaceRange(replacedContent, from, to);
-    editor.setCursor(from.line, from.ch + replacedContent.length);
+    editor.setCursor(getEndPosition(from, replacedContent));
   } else {
     const before = content.slice(0, tokenIndex);
     const after = content.slice(tokenIndex + TOKEN.cursor.length);
@@ -28,15 +38,7 @@ export const pasteCliplet = async (
     const replacedAfter = await replaceWithClipboardText(after, clipboardText);
     const pasteText = replacedBefore + replacedAfter;
     editor.replaceRange(pasteText, from, to);
-
-    const beforeLines = replacedBefore.split('\n');
-    const cursorLineOffset = beforeLines.length - 1;
-    const cursorLine = from.line + cursorLineOffset;
-    const cursorCh =
-      beforeLines.length === 1
-        ? from.ch + beforeLines[0].length
-        : beforeLines[beforeLines.length - 1].length;
-    editor.setCursor(cursorLine, cursorCh);
+    editor.setCursor(getEndPosition(from, replacedBefore));
   }
 
   return {

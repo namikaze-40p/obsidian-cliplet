@@ -11,15 +11,20 @@ import { pasteCliplet } from './utils';
 const MESSAGE = {
   notFound: 'No latest cliplet found.\nPlease add a cliplet first.',
   reload: 'Please reload Obsidian to use the “Cliplet” plugin.',
+  loading: '“Cliplet” is still loading.\nPlease try again in a moment.',
 };
 
 export default class Cliplet extends Plugin {
-  private _service!: ClipletService;
+  // Set only after the service has finished initializing (on layout ready).
+  private _service: ClipletService | null = null;
   private _settingTab!: SettingTab;
 
   declare settings: Settings;
 
   get service(): ClipletService {
+    if (!this._service) {
+      throw new Error('Cliplet service is not initialized yet.');
+    }
     return this._service;
   }
 
@@ -65,8 +70,9 @@ export default class Cliplet extends Plugin {
 
     this.app.workspace.onLayoutReady(async () => {
       const storageType = this.settings.storageType;
-      this._service = new ClipletService(this.settings.vaultId, this, storageType);
-      await this._service.init();
+      const service = new ClipletService(this.settings.vaultId, this, storageType);
+      await service.init();
+      this._service = service;
 
       this._settingTab = new SettingTab(this.app, this);
       this.addSettingTab(this._settingTab);
@@ -77,7 +83,7 @@ export default class Cliplet extends Plugin {
   }
 
   onunload(): void {
-    this._service.closeDB();
+    this._service?.closeDB();
   }
 
   async loadSettings(): Promise<void> {
@@ -88,16 +94,29 @@ export default class Cliplet extends Plugin {
     await this.saveData(this.settings);
   }
 
-  private async addCliplet(content: string): Promise<void> {
+  // Returns the service if it is usable; otherwise shows a notice and returns null.
+  private getAvailableService(): ClipletService | null {
+    if (!this._service) {
+      new Notice(MESSAGE.loading);
+      return null;
+    }
     if (!this._service.hasDB()) {
       new Notice(MESSAGE.reload);
+      return null;
+    }
+    return this._service;
+  }
+
+  private async addCliplet(content: string): Promise<void> {
+    const service = this.getAvailableService();
+    if (!service) {
       return;
     }
 
     const now = dayjs().unix();
-    const duplicate = await this._service.findClipletByContent(content);
+    const duplicate = await service.findClipletByContent(content);
     if (duplicate) {
-      await this._service.putCliplet({ ...duplicate, lastUsed: now });
+      await service.putCliplet({ ...duplicate, lastUsed: now });
       this.settings.latestClipletId = duplicate.id;
       await this.saveSettings();
       return;
@@ -107,7 +126,7 @@ export default class Cliplet extends Plugin {
     const cliplet = {
       id,
       name: '',
-      content: await this._service.encrypt(content),
+      content: await service.encrypt(content),
       type: 'text',
       keyword: '',
       pinned: 0,
@@ -116,26 +135,30 @@ export default class Cliplet extends Plugin {
       lastUsed: 0,
       lastModified: 0,
     };
-    const clipletId = await this._service.addCliplet(cliplet);
+    const clipletId = await service.addCliplet(cliplet);
     await this.deleteExceededRecords();
     this.settings.latestClipletId = clipletId;
     await this.saveSettings();
   }
 
   private async pasteLatestCliplet(editor: Editor): Promise<void> {
-    const cliplet = await this._service.getCliplet(this.settings.latestClipletId);
+    const service = this.getAvailableService();
+    if (!service) {
+      return;
+    }
+
+    const cliplet = await service.getCliplet(this.settings.latestClipletId);
     if (!cliplet) {
       new Notice(MESSAGE.notFound);
       return;
     }
-    const decryptedContent = await this._service.decrypt(cliplet.content);
+    const decryptedContent = await service.decrypt(cliplet.content);
     const pastedCliplet = await pasteCliplet(editor, { ...cliplet, decryptedContent });
-    await this._service.putCliplet(pastedCliplet);
+    await service.putCliplet(pastedCliplet);
   }
 
   private async searchCliplet(editor: Editor): Promise<void> {
-    if (!this._service.hasDB()) {
-      new Notice(MESSAGE.reload);
+    if (!this.getAvailableService()) {
       return;
     }
 
@@ -144,10 +167,10 @@ export default class Cliplet extends Plugin {
   }
 
   private async deleteExceededRecords(): Promise<void> {
-    await this._service.deleteExceededRecords(MAXIMUM_RECORDS);
+    await this.service.deleteExceededRecords(MAXIMUM_RECORDS);
   }
 
   private async deleteOverdueRecords(): Promise<void> {
-    await this._service.deleteOverdueRecords(RETENTION_PERIOD);
+    await this.service.deleteOverdueRecords(RETENTION_PERIOD);
   }
 }

@@ -17,6 +17,9 @@ import { ActionMenuModal } from './action-menu-modal';
 import { ClipletConfirmModal } from './cliplet-confirm-modal';
 import { ClipletEditorModal } from './cliplet-editor-modal';
 
+// Gap between the bottom of the action menu and the top of the search modal footer.
+const ACTION_MENU_FOOTER_GAP = 12;
+
 export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> {
   private _service: ClipletService;
   private _cliplets: DecryptedClipletItem[] = [];
@@ -34,6 +37,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
   private _isOpen = false;
   private _selectionObserver: MutationObserver | null = null;
   private _hasNotifiedDecryptFailure = false;
+  private _footerEl!: HTMLDivElement;
 
   constructor(
     app: App,
@@ -332,7 +336,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
   }
 
   private generateFooter(contentEl: HTMLElement): void {
-    contentEl.createDiv('cs-modal-footer', (footerEl) => {
+    this._footerEl = contentEl.createDiv('cs-modal-footer', (footerEl) => {
       footerEl.createSpan('', (el) => {
         el.createSpan().setText('Search cliplet');
       });
@@ -490,8 +494,10 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
     const modal = new ActionMenuModal(this.app, this.onSelectMenuItem.bind(this), actionMenuItems);
 
     const ref = this.modalEl;
-    const right = `calc((100% - ${ref?.offsetWidth || 0}px) / 2 + 8px)`;
-    const bottom = `calc(100% - (442px + ${ref?.offsetTop || 0}px))`;
+    const menuBottom =
+      ref.offsetTop + ref.offsetHeight - this._footerEl.offsetHeight - ACTION_MENU_FOOTER_GAP;
+    const right = `calc((100% - ${ref.offsetWidth}px) / 2 + 8px)`;
+    const bottom = `calc(100% - ${menuBottom}px)`;
     modal.modalEl.style.setProperty('--cliplet-menu-modal-right', right);
     modal.modalEl.style.setProperty('--cliplet-menu-modal-bottom', bottom);
 

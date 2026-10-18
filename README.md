@@ -40,6 +40,7 @@ Both options work entirely offline and keep your data private (content is encryp
 >     If you frequently use Cliplet across multiple devices, please check how reliably your sync solution updates `data.json` before relying on it.
 > - **Device behavior**: IndexedDB is per device and per vault; `data.json` travels with your vault (Obsidian Sync/Dropbox/Git, etc.).
 > - **Switching**: You can change the storage method in settings. A built-in migration moves all items to the selected storage and deletes them from the previous one.
+> - **Automatic cleanup**: Up to 200 items are kept. Named and pinned items are never deleted automatically, and the 10 most recent unnamed items are always kept, even if you have 200 or more named or pinned items. Unnamed items that have not been used for 60 days are deleted.
 
 ## How to use
 

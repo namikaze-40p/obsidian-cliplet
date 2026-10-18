@@ -27,6 +27,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
   private _preventClose = false;
   private _isOpen = false;
   private _selectionObserver: MutationObserver | null = null;
+  private _hasNotifiedDecryptFailure = false;
 
   constructor(
     app: App,
@@ -150,12 +151,36 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
 
   private async getCliplets(): Promise<void> {
     const cliplets = await this._service.getAllCliplets();
-    this._cliplets = await Promise.all(
-      cliplets.map(async (cliplet: DecryptedClipletItem) => {
-        cliplet.decryptedContent = await this._service.decrypt(cliplet.content);
-        return cliplet;
-      }),
+    // Decrypt each record independently so that one broken record does not hide the others.
+    const results = await Promise.allSettled(
+      cliplets.map(
+        async (cliplet): Promise<DecryptedClipletItem> => ({
+          ...cliplet,
+          decryptedContent: await this._service.decrypt(cliplet.content),
+        }),
+      ),
     );
+    this._cliplets = [];
+    const failures: unknown[] = [];
+    for (const result of results) {
+      if (result.status === 'fulfilled') {
+        this._cliplets.push(result.value);
+      } else {
+        failures.push(result.reason);
+      }
+    }
+    if (failures.length) {
+      console.error('Failed to decrypt cliplets:', failures);
+      // Notify once per modal; this list is reloaded after every action.
+      if (!this._hasNotifiedDecryptFailure) {
+        this._hasNotifiedDecryptFailure = true;
+        new Notice(
+          failures.length === 1
+            ? '1 cliplet could not be decrypted and is hidden.'
+            : `${failures.length} cliplets could not be decrypted and are hidden.`,
+        );
+      }
+    }
     this.inputEl.dispatchEvent(new Event('input'));
 
     if (this._cliplets.length) {

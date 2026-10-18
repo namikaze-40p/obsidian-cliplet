@@ -127,6 +127,8 @@ body .cliplet-placeholder-menu-modal.cp-modal.prompt {
   top: initial;
   right: var(--cliplet-menu-modal-right);
   bottom: var(--cliplet-menu-modal-bottom);
+  /* .prompt has a vertical margin (15vh), which would shift the menu up from the given bottom. */
+  margin-bottom: 0;
   width: 320px;
   height: max-content;
   border: var(--prompt-border-width) solid var(--prompt-border-color);

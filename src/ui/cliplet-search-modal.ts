@@ -359,6 +359,12 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
   }
 
   private registerShortcutKeys(): void {
+    // "pin" and "unpin" share a shortcut and both toggle the pin, so register each shortcut once.
+    const shortcutOf = (item: ActionMenuItem) =>
+      [...item.command.modifiers, item.command.key].join('+');
+    const menuItems = ACTION_MENU_ITEMS.filter(
+      (item, i, items) => items.findIndex((other) => shortcutOf(other) === shortcutOf(item)) === i,
+    );
     const bindings: [Modifier[], string, (ev: KeyboardEvent) => void][] = [
       [
         [IS_APPLE ? 'Meta' : 'Ctrl'],
@@ -369,7 +375,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
           ev.preventDefault();
         },
       ],
-      ...(ACTION_MENU_ITEMS.map((item) => {
+      ...(menuItems.map((item) => {
         return [
           item.command.modifiers,
           item.command.key,

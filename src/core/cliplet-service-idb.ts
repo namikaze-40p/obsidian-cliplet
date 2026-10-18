@@ -74,6 +74,10 @@ export class ClipletServiceIdb implements IClipletServiceBackend {
     return this._store.deleteAll();
   }
 
+  async replaceAllCliplets(values: ClipletItem[]): Promise<void> {
+    return this._store.replaceAll(values.map((value) => this.normalizeObject(value)));
+  }
+
   async deleteExceededRecords(maxCount: number): Promise<void> {
     return this._store.deleteExceededRecords(maxCount);
   }

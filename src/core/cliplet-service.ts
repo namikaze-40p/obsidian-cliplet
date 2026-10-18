@@ -40,19 +40,30 @@ export class ClipletService {
       return;
     }
 
+    const prev = this._backend;
     const next = await this.createBackend(newType);
-
-    const cliplets = await this._backend.getAllCliplets();
-    await next.deleteAllCliplets();
-    for (const cliplet of cliplets) {
-      await next.addCliplet(cliplet);
+    try {
+      // Copy first and persist the new type; the current storage is untouched until then.
+      await next.replaceAllCliplets(await prev.getAllCliplets());
+      this.plugin.settings.storageType = newType;
+      await this.plugin.saveSettings();
+    } catch (error) {
+      this.plugin.settings.storageType = this.storageType;
+      next.destroy();
+      throw error;
     }
-
-    await this._backend.deleteAllCliplets();
-    this._backend.destroy();
 
     this._backend = next;
     this.storageType = newType;
+
+    // A failure here only leaves stale copies behind, so it does not fail the switch.
+    try {
+      await prev.deleteAllCliplets();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      prev.destroy();
+    }
   }
 
   hasDB(): boolean {

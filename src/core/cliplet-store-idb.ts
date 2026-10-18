@@ -36,6 +36,12 @@ export class ClipletStoreIdb {
     await this._db.clear(STORE_NAME);
   }
 
+  // Clears and inserts in a single transaction, so a failure leaves the store unchanged.
+  async replaceAll(values: ClipletItem[]): Promise<void> {
+    const tx = this._db.transaction(STORE_NAME, 'readwrite');
+    await Promise.all([tx.store.clear(), ...values.map((value) => tx.store.add(value)), tx.done]);
+  }
+
   async deleteExceededRecords(maxCount: number): Promise<void> {
     const tx = this._db.transaction(STORE_NAME, 'readwrite');
     const candidates: { key: IDBValidKey; latest: number }[] = [];

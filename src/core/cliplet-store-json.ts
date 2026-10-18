@@ -66,6 +66,19 @@ export class ClipletStoreJson {
     this._clipletMap = new Map();
   }
 
+  // Writes data.json once; on failure the in-memory list is restored.
+  async replaceAll(values: ClipletItem[]): Promise<void> {
+    const prevCliplets = this._plugin.settings.cliplets;
+    this._plugin.settings.cliplets = structuredClone(values);
+    try {
+      await this._plugin.saveSettings();
+    } catch (error) {
+      this._plugin.settings.cliplets = prevCliplets;
+      throw error;
+    }
+    this._clipletMap = new Map(this._cliplets.map((cliplet) => [cliplet.id, cliplet]));
+  }
+
   async deleteExceededRecords(maxCount: number): Promise<void> {
     const candidates: { id: string; latest: number }[] = [];
     this._cliplets.forEach((cliplet) => {

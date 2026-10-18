@@ -15,6 +15,7 @@ export interface IClipletServiceBackend {
   putCliplet(value: ClipletItem): Promise<void>;
   deleteCliplet(id: string): Promise<void>;
   deleteAllCliplets(): Promise<void>;
+  replaceAllCliplets(values: ClipletItem[]): Promise<void>;
   deleteExceededRecords(maxCount: number): Promise<void>;
   deleteOverdueRecords(days: number): Promise<void>;
 }

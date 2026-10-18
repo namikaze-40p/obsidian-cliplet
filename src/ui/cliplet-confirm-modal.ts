@@ -4,6 +4,7 @@ import { onClipletModalClose, onClipletModalOpen } from 'src/utils';
 
 export class ClipletConfirmModal extends Modal {
   private _resolveClose: (() => void) | null = null;
+  private _isOpen = false;
 
   constructor(
     app: App,
@@ -14,6 +15,7 @@ export class ClipletConfirmModal extends Modal {
   }
 
   onOpen(): void {
+    this._isOpen = true;
     onClipletModalOpen();
     this.modalEl.addClasses(['cliplet-confirm-modal', 'cc-modal']);
 
@@ -40,7 +42,10 @@ export class ClipletConfirmModal extends Modal {
             console.error(error);
             new Notice('Failed to delete.');
           } finally {
-            this.close();
+            // The modal may already have been closed (e.g. with Esc) while waiting.
+            if (this._isOpen) {
+              this.close();
+            }
           }
         });
       });
@@ -48,6 +53,7 @@ export class ClipletConfirmModal extends Modal {
   }
 
   onClose(): void {
+    this._isOpen = false;
     onClipletModalClose();
     if (this._resolveClose) {
       this._resolveClose();

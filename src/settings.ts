@@ -88,15 +88,13 @@ export class SettingTab extends PluginSettingTab {
       )
       .addText((text) => {
         this._deleteText = text;
-        text
-          .setPlaceholder('Delete')
-          .onChange((value) => {
-            if (value === DELETION_CONFIRMATION_TEXT) {
-              this._deleteBtn.setDisabled(false);
-            } else {
-              this._deleteBtn.setDisabled(true);
-            }
-          });
+        text.setPlaceholder('Delete').onChange((value) => {
+          if (value === DELETION_CONFIRMATION_TEXT) {
+            this._deleteBtn.setDisabled(false);
+          } else {
+            this._deleteBtn.setDisabled(true);
+          }
+        });
         text.inputEl.addClass('ct-delete-input');
         return text;
       })

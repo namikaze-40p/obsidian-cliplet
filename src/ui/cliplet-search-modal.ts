@@ -5,7 +5,13 @@ import { ClipletService } from 'src/core/cliplet-service';
 import { ACTION_MENU_ITEMS, IS_APPLE, KEYS, TOKEN } from 'src/core/consts';
 import { ActionMenuItem, DecryptedClipletItem } from 'src/core/types';
 import Cliplet from 'src/main';
-import { copyToClipboard, getClipboard, onClipletModalClose, onClipletModalOpen, pasteCliplet } from 'src/utils';
+import {
+  copyToClipboard,
+  getClipboard,
+  onClipletModalClose,
+  onClipletModalOpen,
+  pasteCliplet,
+} from 'src/utils';
 
 import { ActionMenuModal } from './action-menu-modal';
 import { ClipletConfirmModal } from './cliplet-confirm-modal';

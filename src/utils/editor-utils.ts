@@ -6,7 +6,6 @@ import { DecryptedClipletItem } from 'src/core/types';
 
 import { replaceWithClipboardText } from './text-utils';
 
-// Returns the position right after `text` when it is inserted at `from`.
 // Line breaks are split the same way as CodeMirror (\r\n, \r, \n).
 const getEndPosition = (from: EditorPosition, text: string): EditorPosition => {
   const lines = text.split(/\r\n?|\n/);

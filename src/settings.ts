@@ -59,7 +59,6 @@ export class SettingTab extends PluginSettingTab {
             if (!isStorageType(value)) {
               return;
             }
-            // Lock the dropdown while the data is being moved.
             dropdown.setDisabled(true);
             try {
               await this._service.switchStorage(value);

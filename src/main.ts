@@ -101,7 +101,6 @@ export default class Cliplet extends Plugin {
     await this.saveData(this.settings);
   }
 
-  // Returns the service if it is usable; otherwise shows a notice and returns null.
   private getAvailableService(): ClipletService | null {
     if (!this._service) {
       new Notice(this._initFailed ? MESSAGE.reload : MESSAGE.loading);

@@ -25,6 +25,8 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
   private _lastTappedClipletId: string = '';
   private _clipboardText: string = '';
   private _preventClose = false;
+  private _isOpen = false;
+  private _selectionObserver: MutationObserver | null = null;
 
   constructor(
     app: App,
@@ -53,15 +55,23 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
   }
 
   onClose(): void {
+    this._isOpen = false;
+    this._selectionObserver?.disconnect();
+    this._selectionObserver = null;
     onClipletModalClose();
   }
 
   async onOpen(): Promise<void> {
+    this._isOpen = true;
     onClipletModalOpen();
     void super.onOpen();
 
     this._clipboardText = await getClipboard();
     await this.getCliplets();
+    // The modal may have been closed while loading; do not start observing then.
+    if (!this._isOpen) {
+      return;
+    }
     const suggestionContainer = this.containerEl.querySelector('.prompt-results');
     if (suggestionContainer) {
       this.detectChangeSelectedItem(suggestionContainer);
@@ -174,6 +184,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
   }
 
   private detectChangeSelectedItem(suggestionContainer: Element): void {
+    this._selectionObserver?.disconnect();
     const observer = new MutationObserver(() => {
       const selectedEl = suggestionContainer.querySelector('.suggestion-item.is-selected');
       if (selectedEl) {
@@ -189,6 +200,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
       subtree: true,
       attributeFilter: ['class'],
     });
+    this._selectionObserver = observer;
   }
 
   private findClipletItem(el: ChildNode | null | undefined): DecryptedClipletItem | undefined {

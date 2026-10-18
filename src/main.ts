@@ -94,8 +94,16 @@ export default class Cliplet extends Plugin {
       return;
     }
 
-    const id = uuid();
     const now = dayjs().unix();
+    const duplicate = await this._service.findClipletByContent(content);
+    if (duplicate) {
+      await this._service.putCliplet({ ...duplicate, lastUsed: now });
+      this.settings.latestClipletId = duplicate.id;
+      await this.saveSettings();
+      return;
+    }
+
+    const id = uuid();
     const cliplet = {
       id,
       name: '',

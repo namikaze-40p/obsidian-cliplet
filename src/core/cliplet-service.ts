@@ -83,6 +83,20 @@ export class ClipletService {
     return (await this._backend.getAllCliplets()).sort(compare);
   }
 
+  // Ciphertexts differ on every encryption (random IV), so compare decrypted contents.
+  async findClipletByContent(content: string): Promise<ClipletItem | undefined> {
+    for (const cliplet of await this.getAllCliplets()) {
+      try {
+        if ((await this.decrypt(cliplet.content)) === content) {
+          return cliplet;
+        }
+      } catch {
+        // Skip records that cannot be decrypted.
+      }
+    }
+    return undefined;
+  }
+
   async addCliplet(value: ClipletItem): Promise<string> {
     return this._backend.addCliplet(value);
   }

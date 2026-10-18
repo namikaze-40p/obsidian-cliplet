@@ -20,13 +20,8 @@ export class ClipletStoreIdb {
   }
 
   async add(value: ClipletItem): Promise<string> {
-    const existClipletId = await this.contentDuplicateId(value.content);
-    if (existClipletId) {
-      return existClipletId;
-    } else {
-      await this._db.add(STORE_NAME, value);
-      return value.id;
-    }
+    await this._db.add(STORE_NAME, value);
+    return value.id;
   }
 
   async put(value: ClipletItem): Promise<void> {
@@ -85,11 +80,6 @@ export class ClipletStoreIdb {
     }
 
     await tx.done;
-  }
-
-  private async contentDuplicateId(content: string): Promise<string> {
-    const cliplet = (await this.list()).find((cliplet) => cliplet.content === content);
-    return cliplet ? cliplet.id : '';
   }
 
   private isProtectedRecord(record: ClipletItem): boolean {

@@ -37,15 +37,10 @@ export class ClipletStoreJson {
   }
 
   async add(value: ClipletItem): Promise<string> {
-    const existClipletId = await this.contentDuplicateId(value.content);
-    if (existClipletId) {
-      return existClipletId;
-    } else {
-      this._plugin.settings.cliplets.push(value);
-      await this._plugin.saveSettings();
-      this._clipletMap.set(value.id, value);
-      return value.id;
-    }
+    this._plugin.settings.cliplets.push(value);
+    await this._plugin.saveSettings();
+    this._clipletMap.set(value.id, value);
+    return value.id;
   }
 
   async put(value: ClipletItem): Promise<void> {
@@ -111,11 +106,6 @@ export class ClipletStoreJson {
       }
     });
     await this._plugin.saveSettings();
-  }
-
-  private async contentDuplicateId(content: string): Promise<string> {
-    const cliplet = (await this.list()).find((cliplet) => cliplet.content === content);
-    return cliplet ? cliplet.id : '';
   }
 
   private isProtectedCliplet(cliplet: ClipletItem): boolean {

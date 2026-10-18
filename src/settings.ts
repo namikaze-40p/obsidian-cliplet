@@ -106,7 +106,7 @@ export class SettingTab extends PluginSettingTab {
             await this._service.deleteDB();
             new Notice(DELETE_SUCCESS_MESSAGE);
             this._plugin.settings.latestClipletId = '';
-            await this._plugin.saveData(this._plugin.settings);
+            await this._plugin.saveSettings();
             this._deleteText.setValue('');
             this._deleteBtn.setDisabled(true);
           });

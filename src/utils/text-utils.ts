@@ -7,7 +7,8 @@ export const replaceWithClipboardText = async (
   clipboardText: string | null = null,
 ): Promise<string> => {
   const replaceText = clipboardText ?? (await getClipboard());
-  return content.replace(new RegExp(TOKEN.clipboard, 'g'), replaceText);
+  // split/join inserts the text literally ("$&" etc. are not treated as replacement patterns).
+  return content.split(TOKEN.clipboard).join(replaceText);
 };
 
 export const getClipboard = async (): Promise<string> => {

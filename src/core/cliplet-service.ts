@@ -1,8 +1,22 @@
+import dayjs from 'dayjs';
+
 import Cliplet from 'src/main';
 
-import { ClipletServiceIdb } from './cliplet-service-idb';
-import { ClipletServiceJson } from './cliplet-service-json';
-import { ClipletItem, IClipletServiceBackend, StorageType } from './types';
+import { normalizeCliplet } from './cliplet-item';
+import { ClipletStoreIdb } from './cliplet-store-idb';
+import { ClipletStoreJson } from './cliplet-store-json';
+import crypto from './crypto';
+import { deleteDatabase } from './database';
+import { ClipletItem, IClipletStore, StorageType } from './types';
+
+const latestTime = (cliplet: ClipletItem): number =>
+  Math.max(cliplet.created, cliplet.lastUsed, cliplet.lastModified);
+
+// Protected cliplets are never deleted automatically.
+const isProtected = (cliplet: ClipletItem): boolean =>
+  (typeof cliplet.name === 'string' && cliplet.name.trim() !== '') ||
+  (typeof cliplet.keyword === 'string' && cliplet.keyword.trim() !== '') ||
+  !!cliplet.pinned;
 
 const compare = (a: ClipletItem, b: ClipletItem): number => {
   if (b.pinned > a.pinned) {
@@ -10,14 +24,13 @@ const compare = (a: ClipletItem, b: ClipletItem): number => {
   } else if (b.pinned < a.pinned) {
     return -1;
   }
-  return (
-    Math.max(b.lastUsed, b.lastModified, b.created) -
-    Math.max(a.lastUsed, a.lastModified, a.created)
-  );
+  return latestTime(b) - latestTime(a);
 };
 
 export class ClipletService {
-  private _backend!: IClipletServiceBackend;
+  private _store!: IClipletStore;
+  private _aesKey!: CryptoKey;
+  private _isClosed = false;
 
   constructor(
     private readonly vaultId: string,
@@ -26,13 +39,14 @@ export class ClipletService {
   ) {}
 
   async init(): Promise<void> {
-    this._backend = await this.createBackend(this.storageType);
+    this._aesKey = await crypto.deriveKey(this.vaultId);
+    this._store = await this.openStore(this.storageType);
   }
 
-  private async createBackend(kind: StorageType): Promise<IClipletServiceBackend> {
-    return kind === 'idb'
-      ? await ClipletServiceIdb.create(this.vaultId)
-      : await ClipletServiceJson.create(this.vaultId, this.plugin);
+  private async openStore(type: StorageType): Promise<IClipletStore> {
+    return type === 'idb'
+      ? await ClipletStoreIdb.open(this.vaultId)
+      : new ClipletStoreJson(this.plugin);
   }
 
   async switchStorage(newType: StorageType): Promise<void> {
@@ -40,58 +54,66 @@ export class ClipletService {
       return;
     }
 
-    const prev = this._backend;
-    const next = await this.createBackend(newType);
+    const prev = this._store;
+    const next = await this.openStore(newType);
     try {
       // Copy first and persist the new type; the current storage is untouched until then.
-      await next.replaceAllCliplets(await prev.getAllCliplets());
+      await next.replaceAll((await prev.list()).map(normalizeCliplet));
       this.plugin.settings.storageType = newType;
       await this.plugin.saveSettings();
     } catch (error) {
       this.plugin.settings.storageType = this.storageType;
-      next.destroy();
+      next.close();
       throw error;
     }
 
-    this._backend = next;
+    this._store = next;
     this.storageType = newType;
 
     // A failure here only leaves stale copies behind, so it does not fail the switch.
     try {
-      await prev.deleteAllCliplets();
+      await prev.replaceAll([]);
     } catch (error) {
       console.error(error);
     } finally {
-      prev.destroy();
+      prev.close();
     }
   }
 
+  // False after the service is closed or all data is deleted; the plugin must be reloaded then.
   hasDB(): boolean {
-    return !!this._backend.hasDB();
+    return !this._isClosed;
   }
 
   closeDB(): void {
-    this._backend.closeDB();
+    this._isClosed = true;
+    this._store.close();
   }
 
+  // Deletes the data in both storages, including stale copies left by a storage switch.
   async deleteDB(): Promise<void> {
-    await this._backend.deleteDB();
+    if (this._isClosed) {
+      return;
+    }
+    this.closeDB();
+    await new ClipletStoreJson(this.plugin).replaceAll([]);
+    await deleteDatabase(this.vaultId);
   }
 
   async decrypt(value: string): Promise<string> {
-    return this._backend.decrypt(value);
+    return crypto.decryptData(value, this._aesKey);
   }
 
   async encrypt(value: string): Promise<string> {
-    return this._backend.encrypt(value);
+    return crypto.encryptData(value, this._aesKey);
   }
 
   async getCliplet(id: string): Promise<ClipletItem | undefined> {
-    return this._backend.getCliplet(id);
+    return this._store.get(id);
   }
 
   async getAllCliplets(): Promise<ClipletItem[]> {
-    return (await this._backend.getAllCliplets()).sort(compare);
+    return (await this._store.list()).sort(compare);
   }
 
   // Ciphertexts differ on every encryption (random IV), so compare decrypted contents.
@@ -109,26 +131,38 @@ export class ClipletService {
   }
 
   async addCliplet(value: ClipletItem): Promise<string> {
-    return this._backend.addCliplet(value);
+    await this._store.add(normalizeCliplet(value));
+    return value.id;
   }
 
   async putCliplet(value: ClipletItem): Promise<void> {
-    return this._backend.putCliplet(value);
+    await this._store.put(normalizeCliplet(value));
   }
 
   async deleteCliplet(id: string): Promise<void> {
-    return this._backend.deleteCliplet(id);
+    await this._store.deleteMany([id]);
   }
 
-  async deleteAllCliplets(): Promise<void> {
-    return this._backend.deleteAllCliplets();
-  }
-
+  // Keeps the newest unprotected cliplets so that the total stays within maxCount.
   async deleteExceededRecords(maxCount: number): Promise<void> {
-    return this._backend.deleteExceededRecords(maxCount);
+    const cliplets = await this._store.list();
+    const candidates = cliplets.filter((cliplet) => !isProtected(cliplet));
+    const limit = maxCount - (cliplets.length - candidates.length);
+    if (candidates.length <= limit) {
+      return;
+    }
+    const ids = candidates
+      .sort((a, b) => latestTime(b) - latestTime(a))
+      .slice(limit)
+      .map(({ id }) => id);
+    await this._store.deleteMany(ids);
   }
 
   async deleteOverdueRecords(days: number): Promise<void> {
-    return this._backend.deleteOverdueRecords(days);
+    const threshold = Math.floor(dayjs().subtract(days, 'day').valueOf() / 1000);
+    const ids = (await this._store.list())
+      .filter((cliplet) => !isProtected(cliplet) && latestTime(cliplet) < threshold)
+      .map(({ id }) => id);
+    await this._store.deleteMany(ids);
   }
 }

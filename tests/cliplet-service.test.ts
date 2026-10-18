@@ -79,6 +79,29 @@ describe.each<StorageType>(['idb', 'json'])('ClipletService (%s)', (storageType)
     expect(await service.getCliplet('a')).toBeUndefined();
   });
 
+  it('does not create a cliplet when updating one that does not exist', async () => {
+    const service = await createService(createPlugin(storageType));
+    await service.putCliplet(item('missing'));
+    expect(await ids(service)).toEqual([]);
+  });
+
+  it('deletes the data in both storages and requires a reload', async () => {
+    const vaultId = `vault-${vaultCount++}`;
+    const idbService = await createService(createPlugin('idb'), vaultId);
+    await idbService.addCliplet(item('in-idb'));
+    idbService.closeDB();
+    // data.json also holds a stale copy, e.g. left by a failed storage switch.
+    const plugin = createPlugin(storageType, [item('in-json')]);
+    const service = await createService(plugin, vaultId);
+
+    await service.deleteDB();
+
+    expect(service.hasDB()).toBe(false);
+    expect(plugin.persisted?.cliplets).toEqual([]);
+    const reopened = await createService(createPlugin('idb'), vaultId);
+    expect(await ids(reopened)).toEqual([]);
+  });
+
   it('lists pinned cliplets first, then the most recently used', async () => {
     const service = await createService(createPlugin(storageType));
     await service.addCliplet(item('old', { created: daysAgo(3) }));

@@ -1,15 +1,16 @@
-import dayjs from 'dayjs';
 import { IDBPDatabase } from 'idb';
 
-import { ClipletDBSchema } from './database';
-import { ClipletItem } from './types';
+import { ClipletDBSchema, getDbPromise } from './database';
+import { ClipletItem, IClipletStore } from './types';
 
 const STORE_NAME = 'cliplet';
 
-export class ClipletStoreIdb {
-  private readonly _version = 1;
+export class ClipletStoreIdb implements IClipletStore {
+  private constructor(private _db: IDBPDatabase<ClipletDBSchema>) {}
 
-  constructor(private _db: IDBPDatabase<ClipletDBSchema>) {}
+  static async open(vaultId: string): Promise<ClipletStoreIdb> {
+    return new ClipletStoreIdb(await getDbPromise(vaultId));
+  }
 
   async get(id: string): Promise<ClipletItem | undefined> {
     return await this._db.get(STORE_NAME, id);
@@ -19,80 +20,32 @@ export class ClipletStoreIdb {
     return await this._db.getAll(STORE_NAME);
   }
 
-  async add(value: ClipletItem): Promise<string> {
+  async add(value: ClipletItem): Promise<void> {
     await this._db.add(STORE_NAME, value);
-    return value.id;
   }
 
   async put(value: ClipletItem): Promise<void> {
-    await this._db.put(STORE_NAME, value);
+    const tx = this._db.transaction(STORE_NAME, 'readwrite');
+    if ((await tx.store.getKey(value.id)) !== undefined) {
+      await tx.store.put(value);
+    }
+    await tx.done;
   }
 
-  async delete(id: string): Promise<void> {
-    await this._db.delete(STORE_NAME, id);
+  async deleteMany(ids: string[]): Promise<void> {
+    if (!ids.length) {
+      return;
+    }
+    const tx = this._db.transaction(STORE_NAME, 'readwrite');
+    await Promise.all([...ids.map((id) => tx.store.delete(id)), tx.done]);
   }
 
-  async deleteAll(): Promise<void> {
-    await this._db.clear(STORE_NAME);
-  }
-
-  // Clears and inserts in a single transaction, so a failure leaves the store unchanged.
   async replaceAll(values: ClipletItem[]): Promise<void> {
     const tx = this._db.transaction(STORE_NAME, 'readwrite');
     await Promise.all([tx.store.clear(), ...values.map((value) => tx.store.add(value)), tx.done]);
   }
 
-  async deleteExceededRecords(maxCount: number): Promise<void> {
-    const tx = this._db.transaction(STORE_NAME, 'readwrite');
-    const candidates: { key: IDBValidKey; latest: number }[] = [];
-
-    for await (const cursor of tx.store.iterate()) {
-      const record = cursor.value;
-      if (this.isProtectedRecord(record)) {
-        --maxCount;
-        continue;
-      }
-
-      const latest = Math.max(record.created, record.lastUsed, record.lastModified);
-      candidates.push({ key: cursor.primaryKey, latest });
-    }
-
-    if (candidates.length <= maxCount) {
-      return;
-    }
-
-    const toDelete = candidates.sort((a, b) => b.latest - a.latest).slice(maxCount);
-    for (const record of toDelete) {
-      await tx.store.delete(record.key as string);
-    }
-
-    await tx.done;
-  }
-
-  async deleteOverdueRecords(days: number): Promise<void> {
-    const threshold = Math.floor(dayjs().subtract(days, 'day').valueOf() / 1000);
-    const tx = this._db.transaction(STORE_NAME, 'readwrite');
-
-    for await (const cursor of tx.store.iterate()) {
-      const record = cursor.value;
-      if (this.isProtectedRecord(record)) {
-        continue;
-      }
-
-      const latest = Math.max(record.created, record.lastUsed, record.lastModified);
-      if (latest < threshold) {
-        await cursor.delete();
-      }
-    }
-
-    await tx.done;
-  }
-
-  private isProtectedRecord(record: ClipletItem): boolean {
-    return (
-      (typeof record.name === 'string' && record.name.trim() !== '') ||
-      (typeof record.keyword === 'string' && record.keyword.trim() !== '') ||
-      !!record.pinned
-    );
+  close(): void {
+    this._db.close();
   }
 }

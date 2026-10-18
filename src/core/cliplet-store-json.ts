@@ -1,131 +1,58 @@
-import dayjs from 'dayjs';
-
 import Cliplet from 'src/main';
 
-import { ClipletItem } from './types';
+import { ClipletItem, IClipletStore } from './types';
 
-const setProp = <T, K extends keyof T>(obj: T, key: K, value: T[K]) => {
-  obj[key] = value;
-};
-
-const setProps = <T>(target: T, props: Partial<T>) => {
-  for (const key of Object.keys(props) as Array<keyof T>) {
-    const value = props[key];
-    if (value !== undefined) {
-      setProp(target, key, value);
-    }
-  }
-};
-
-export class ClipletStoreJson {
-  private _clipletMap = new Map<string, ClipletItem>();
+// Stores cliplets in the plugin settings, which are saved to data.json.
+export class ClipletStoreJson implements IClipletStore {
+  constructor(private _plugin: Cliplet) {}
 
   private get _cliplets(): ClipletItem[] {
     return this._plugin.settings.cliplets;
   }
 
-  constructor(private _plugin: Cliplet) {
-    this._clipletMap = new Map(this._cliplets.map((cliplet) => [cliplet.id, cliplet]));
-  }
-
   async get(id: string): Promise<ClipletItem | undefined> {
-    return this._clipletMap.get(id);
+    const cliplet = this._cliplets.find((cliplet) => cliplet.id === id);
+    return cliplet && structuredClone(cliplet);
   }
 
   async list(): Promise<ClipletItem[]> {
     return structuredClone(this._cliplets);
   }
 
-  async add(value: ClipletItem): Promise<string> {
-    this._plugin.settings.cliplets.push(value);
-    await this._plugin.saveSettings();
-    this._clipletMap.set(value.id, value);
-    return value.id;
+  async add(value: ClipletItem): Promise<void> {
+    await this.save([...this._cliplets, value]);
   }
 
   async put(value: ClipletItem): Promise<void> {
-    const cliplet = this._clipletMap.get(value.id);
-    if (cliplet) {
-      const { content, name, count, pinned, lastUsed, lastModified } = value;
-      const updateProps = { content, name, count, pinned, lastUsed, lastModified };
-      setProps(cliplet, updateProps);
-      await this._plugin.saveSettings();
-      this._clipletMap.set(cliplet.id, cliplet);
+    if (!this._cliplets.some((cliplet) => cliplet.id === value.id)) {
+      return;
     }
+    await this.save(this._cliplets.map((cliplet) => (cliplet.id === value.id ? value : cliplet)));
   }
 
-  async delete(id: string): Promise<void> {
-    this._plugin.settings.cliplets = this._cliplets.filter((cliplet) => cliplet.id !== id);
-    await this._plugin.saveSettings();
-    this._clipletMap.delete(id);
+  async deleteMany(ids: string[]): Promise<void> {
+    const cliplets = this._cliplets.filter((cliplet) => !ids.includes(cliplet.id));
+    if (cliplets.length === this._cliplets.length) {
+      return;
+    }
+    await this.save(cliplets);
   }
 
-  async deleteAll(): Promise<void> {
-    this._plugin.settings.cliplets = [];
-    await this._plugin.saveSettings();
-    this._clipletMap = new Map();
+  async replaceAll(values: ClipletItem[]): Promise<void> {
+    await this.save(structuredClone(values));
   }
+
+  close(): void {}
 
   // Writes data.json once; on failure the in-memory list is restored.
-  async replaceAll(values: ClipletItem[]): Promise<void> {
+  private async save(cliplets: ClipletItem[]): Promise<void> {
     const prevCliplets = this._plugin.settings.cliplets;
-    this._plugin.settings.cliplets = structuredClone(values);
+    this._plugin.settings.cliplets = cliplets;
     try {
       await this._plugin.saveSettings();
     } catch (error) {
       this._plugin.settings.cliplets = prevCliplets;
       throw error;
     }
-    this._clipletMap = new Map(this._cliplets.map((cliplet) => [cliplet.id, cliplet]));
-  }
-
-  async deleteExceededRecords(maxCount: number): Promise<void> {
-    const candidates: { id: string; latest: number }[] = [];
-    this._cliplets.forEach((cliplet) => {
-      if (this.isProtectedCliplet(cliplet)) {
-        --maxCount;
-        return;
-      }
-      const latest = Math.max(cliplet.created, cliplet.lastUsed, cliplet.lastModified);
-      candidates.push({ id: cliplet.id, latest });
-    });
-
-    if (candidates.length <= maxCount) {
-      return;
-    }
-
-    const toDeleteItems = candidates
-      .sort((a, b) => b.latest - a.latest)
-      .slice(maxCount)
-      .map(({ id }) => id);
-    this._plugin.settings.cliplets = this._cliplets.filter(
-      (cliplet) => !toDeleteItems.includes(cliplet.id),
-    );
-    await this._plugin.saveSettings();
-    this._clipletMap = new Map(this._cliplets.map((cliplet) => [cliplet.id, cliplet]));
-  }
-
-  async deleteOverdueRecords(days: number): Promise<void> {
-    const threshold = Math.floor(dayjs().subtract(days, 'day').valueOf() / 1000);
-    this._plugin.settings.cliplets = this._cliplets.filter((cliplet) => {
-      if (this.isProtectedCliplet(cliplet)) {
-        return true;
-      }
-      const latest = Math.max(cliplet.created, cliplet.lastUsed, cliplet.lastModified);
-      if (latest < threshold) {
-        this._clipletMap.delete(cliplet.id);
-      } else {
-        return true;
-      }
-    });
-    await this._plugin.saveSettings();
-  }
-
-  private isProtectedCliplet(cliplet: ClipletItem): boolean {
-    return (
-      (typeof cliplet.name === 'string' && cliplet.name.trim() !== '') ||
-      (typeof cliplet.keyword === 'string' && cliplet.keyword.trim() !== '') ||
-      !!cliplet.pinned
-    );
   }
 }

@@ -1,23 +1,16 @@
 import { Modifier } from 'obsidian';
 
-export interface IClipletServiceBackend {
-  destroy(): void;
-  hasDB(): boolean;
-  closeDB(): void;
-  deleteDB(): Promise<void>;
-
-  decrypt(value: string): Promise<string>;
-  encrypt(value: string): Promise<string>;
-
-  getCliplet(id: string): Promise<ClipletItem | undefined>;
-  getAllCliplets(): Promise<ClipletItem[]>;
-  addCliplet(value: ClipletItem): Promise<string>;
-  putCliplet(value: ClipletItem): Promise<void>;
-  deleteCliplet(id: string): Promise<void>;
-  deleteAllCliplets(): Promise<void>;
-  replaceAllCliplets(values: ClipletItem[]): Promise<void>;
-  deleteExceededRecords(maxCount: number): Promise<void>;
-  deleteOverdueRecords(days: number): Promise<void>;
+// Reads and writes cliplets in one storage. Policies (encryption, retention, ...) live in ClipletService.
+export interface IClipletStore {
+  get(id: string): Promise<ClipletItem | undefined>;
+  list(): Promise<ClipletItem[]>;
+  add(value: ClipletItem): Promise<void>;
+  // Does nothing when the cliplet does not exist.
+  put(value: ClipletItem): Promise<void>;
+  deleteMany(ids: string[]): Promise<void>;
+  // Replaces all cliplets atomically: on failure the store is left unchanged.
+  replaceAll(values: ClipletItem[]): Promise<void>;
+  close(): void;
 }
 
 export type StorageType = 'idb' | 'json';

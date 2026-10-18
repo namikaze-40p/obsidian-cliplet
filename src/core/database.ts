@@ -1,4 +1,4 @@
-import { openDB, DBSchema, IDBPDatabase } from 'idb';
+import { deleteDB, openDB, DBSchema, IDBPDatabase } from 'idb';
 
 import { ClipletItem } from './types';
 
@@ -15,8 +15,10 @@ export interface ClipletDBSchema extends DBSchema {
   };
 }
 
+const getDbName = (vaultId: string): string => `${vaultId}-Cliplet`;
+
 export const getDbPromise = (vaultId: string): Promise<IDBPDatabase<ClipletDBSchema>> => {
-  return openDB(`${vaultId}-Cliplet`, DB_VERSION, {
+  return openDB(getDbName(vaultId), DB_VERSION, {
     upgrade(db) {
       if (!db.objectStoreNames.contains(STORE_NAME.cliplet)) {
         const store = db.createObjectStore(STORE_NAME.cliplet, { keyPath: 'id' });
@@ -28,3 +30,5 @@ export const getDbPromise = (vaultId: string): Promise<IDBPDatabase<ClipletDBSch
     },
   });
 };
+
+export const deleteDatabase = (vaultId: string): Promise<void> => deleteDB(getDbName(vaultId));

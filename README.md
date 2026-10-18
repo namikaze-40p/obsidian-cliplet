@@ -23,7 +23,7 @@ Cliplet supports two storage methods. With a maximum of 200 items and encryption
 - **IndexedDB** – Stored in Obsidian’s internal browser database **per vault and per device**. This allows you to keep different cliplet data on different devices or vaults, making it useful for separating work and personal content or desktop and mobile usage.
 - **data.json** – Stored as a JSON file inside your vault. Easy to locate and manage, and included in your vault backups, sync, and version control.
 
-Both options work entirely offline and keep your data private (content is encrypted at rest).
+Both options work entirely offline and never send your data to external servers (content is also encrypted at rest to prevent casual viewing).
 
 | Storage type  | Advantages                                                                                                       | Disadvantages                                                                             |
 | ------------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
@@ -32,9 +32,9 @@ Both options work entirely offline and keep your data private (content is encryp
 
 > [!NOTE]
 >
-> - **Encryption**: Cliplet encrypts stored content. While this prevents casual access, it is open-source software—someone with sufficient knowledge and access could theoretically decrypt the data.
+> - **Encryption**: Cliplet encrypts stored content to prevent casual viewing (e.g., opening `data.json` or browsing IndexedDB). The encryption key is derived from an ID stored in this plugin's `data.json`, so anyone who obtains your `data.json` and knows how Cliplet works can decrypt your cliplets. Do not rely on it to protect sensitive information such as passwords.
 > - **data.json storage notes**:
->   - If your vault is stored on the internet (e.g., in a public GitHub repository or shared cloud folder), avoid making `data.json` publicly accessible. Even though its contents are encrypted, publishing it may still expose sensitive information to potential decryption attempts.
+>   - If your vault is stored on the internet (e.g., in a public GitHub repository or shared cloud folder), avoid making `data.json` publicly accessible. Because the encryption key is derived from `data.json` itself, publishing it effectively exposes your cliplets.
 >   - Using `data.json` lets your cliplets sync across devices — **but only if your sync service keeps that file up to date**.  
 >     Some services, like **iCloud**, can be **slow or unreliable** at syncing `data.json`, especially on iPhone or iPad.  
 >     If you frequently use Cliplet across multiple devices, please check how reliably your sync solution updates `data.json` before relying on it.

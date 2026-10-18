@@ -79,6 +79,22 @@ describe.each<StorageType>(['idb', 'json'])('ClipletService (%s)', (storageType)
     expect(await service.getCliplet('a')).toBeUndefined();
   });
 
+  it('deletes multiple cliplets at once', async () => {
+    const plugin = createPlugin(storageType);
+    const service = await createService(plugin);
+    for (const id of ['a', 'b', 'c']) {
+      await service.addCliplet(item(id));
+    }
+    const saveCount = plugin.saveCount;
+
+    await service.deleteCliplets(['a', 'c']);
+
+    expect(await ids(service)).toEqual(['b']);
+    if (storageType === 'json') {
+      expect(plugin.saveCount - saveCount).toBe(1);
+    }
+  });
+
   it('does not create a cliplet when updating one that does not exist', async () => {
     const service = await createService(createPlugin(storageType));
     await service.putCliplet(item('missing'));

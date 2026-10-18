@@ -3,8 +3,6 @@ const { subtle } = orgCrypto;
 const getRandomValues = orgCrypto.getRandomValues.bind(orgCrypto);
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
-const salt1 = encoder.encode('cliplet-salt1');
-const salt2 = encoder.encode('cliplet-salt2');
 const HKDF_SALT_V1 = 'cliplet:salt:v1';
 const HKDF_INFO_CEK_V1 = 'cliplet:cek:v1';
 // Spreading a large array into String.fromCharCode exceeds the call stack limit.
@@ -53,8 +51,6 @@ const decryptData = async (encoded: string, key: CryptoKey): Promise<string> => 
 };
 
 const crypto = {
-  salt1,
-  salt2,
   deriveKey,
   encryptData,
   decryptData,

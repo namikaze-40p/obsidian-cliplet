@@ -32,17 +32,3 @@ export const copyToClipboard = async (text: string): Promise<void> => {
     new Notice('Failed to copy to clipboard');
   }
 };
-
-export const escapeHtml = (text: string): string => {
-  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-};
-
-export const replaceWithHighlight = (
-  text: string,
-  pattern: string,
-  global: boolean,
-  replacer: (full: string, inner: string) => string,
-): string => {
-  const regex = new RegExp(pattern, global ? 'g' : '');
-  return text.replace(regex, (full, inner) => replacer(full, inner));
-};

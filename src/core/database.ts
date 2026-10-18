@@ -11,7 +11,7 @@ export interface ClipletDBSchema extends DBSchema {
   [STORE_NAME.cliplet]: {
     key: string;
     value: ClipletItem;
-    indexes: { pinned: IDBValidKey; keyword: IDBValidKey; lastUsed: IDBValidKey };
+    indexes: { keyword: IDBValidKey };
   };
 }
 

@@ -1,4 +1,4 @@
-import { App, Modal, Setting } from 'obsidian';
+import { App, Modal, Notice, Setting } from 'obsidian';
 
 import { onClipletModalClose, onClipletModalOpen } from 'src/utils';
 
@@ -31,9 +31,17 @@ export class ClipletConfirmModal extends Modal {
       new Setting(el).addButton((buttonEl) => {
         buttonEl.setClass('mod-warning');
         buttonEl.setButtonText('Delete');
-        buttonEl.onClick(() => {
-          void this._callback();
-          this.close();
+        buttonEl.onClick(async () => {
+          // Wait for the deletion so that callers reloading on close see the result.
+          buttonEl.setDisabled(true);
+          try {
+            await this._callback();
+          } catch (error) {
+            console.error(error);
+            new Notice('Failed to delete.');
+          } finally {
+            this.close();
+          }
         });
       });
     });

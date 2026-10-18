@@ -31,9 +31,9 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
     lastModified: null,
     created: null,
   };
-  private _lastTappedClipletId: string = '';
   private _clipboardText: string = '';
-  private _preventClose = false;
+  // Set on a touch/pen press on a cliplet that is not selected yet: that tap only selects it.
+  private _tapToSelectId: string | null = null;
   private _isOpen = false;
   private _selectionObserver: MutationObserver | null = null;
   private _hasNotifiedDecryptFailure = false;
@@ -55,14 +55,6 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
     const detailEl = this.modalEl.createDiv('cliplet-detail');
     this.generateDetails(detailEl);
     this.generateFooter(this.modalEl);
-  }
-
-  close(): void {
-    if (this._preventClose) {
-      this._preventClose = false;
-      return;
-    }
-    super.close();
   }
 
   onClose(): void {
@@ -103,25 +95,17 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
       await this._service.putCliplet(pastedCliplet);
       this._plugin.settings.latestClipletId = pastedCliplet.id;
       await this._plugin.saveSettings();
-      this._lastTappedClipletId = '';
     })();
   }
 
-  onChooseSuggestion(item: FuzzyMatch<DecryptedClipletItem>, ev: MouseEvent | KeyboardEvent): void {
-    const cliplet = item.item;
-
-    // Case: KeyboardEvent(Enter key) or Mouse click
-    if ((ev instanceof KeyboardEvent && ev.code === 'Enter') || !this._lastTappedClipletId) {
-      void this.onChooseItem(cliplet);
+  // On touch/pen, the first tap on a cliplet only selects it so that its details can be checked;
+  // tapping the selected cliplet pastes it. Mouse clicks and Enter paste immediately.
+  selectSuggestion(value: FuzzyMatch<DecryptedClipletItem>, evt: MouseEvent | KeyboardEvent): void {
+    if (evt instanceof MouseEvent && this._tapToSelectId === value.item.id) {
+      this._tapToSelectId = null;
       return;
     }
-
-    // Case: Touch or Pen input
-    if (this._lastTappedClipletId === cliplet.id) {
-      void this.onChooseItem(cliplet);
-    } else {
-      this._lastTappedClipletId = cliplet.id;
-    }
+    super.selectSuggestion(value, evt);
   }
 
   renderSuggestion(
@@ -194,7 +178,6 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
     this.inputEl.dispatchEvent(new Event('input'));
 
     if (this._cliplets.length) {
-      this._lastTappedClipletId = this._cliplets[0].id;
       this.updateDetailView(this._cliplets[0]);
     }
   }
@@ -246,21 +229,11 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
   }
 
   private attachPointerHandler(item: HTMLElement): void {
-    item.addEventListener('pointerup', (ev: PointerEvent) => {
-      if (!['touch', 'pen'].includes(ev.pointerType)) {
-        this._lastTappedClipletId = '';
-        return;
-      }
-
+    // Recorded on pointerdown, before the tap moves the selection to this cliplet.
+    item.addEventListener('pointerdown', (ev: PointerEvent) => {
+      const isTouch = ev.pointerType === 'touch' || ev.pointerType === 'pen';
       const cliplet = this.findClipletItem(item.lastChild);
-      if (!cliplet) {
-        return;
-      }
-
-      if (!['BEFORE_SET', cliplet.id].includes(this._lastTappedClipletId)) {
-        this._lastTappedClipletId = 'BEFORE_SET';
-        this._preventClose = true;
-      }
+      this._tapToSelectId = isTouch && cliplet && !item.hasClass('is-selected') ? cliplet.id : null;
     });
   }
 
@@ -278,7 +251,6 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
     created.empty();
 
     if (!cliplet) {
-      this._lastTappedClipletId = '';
       return;
     }
 
@@ -304,9 +276,6 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
       lastModified.parentElement?.removeClass('is-hidden');
     } else {
       lastModified.parentElement?.addClass('is-hidden');
-    }
-    if (!this._preventClose) {
-      this._lastTappedClipletId = cliplet.id;
     }
   }
 

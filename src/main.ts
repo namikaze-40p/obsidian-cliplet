@@ -12,6 +12,7 @@ const MESSAGE = {
   notFound: 'No latest cliplet found.\nPlease add a cliplet first.',
   reload: 'Please reload Obsidian to use the “Cliplet” plugin.',
   loading: '“Cliplet” is still loading.\nPlease try again in a moment.',
+  decryptFailed: 'The latest cliplet could not be decrypted.',
 };
 
 export default class Cliplet extends Plugin {
@@ -158,7 +159,14 @@ export default class Cliplet extends Plugin {
       new Notice(MESSAGE.notFound);
       return;
     }
-    const decryptedContent = await service.decrypt(cliplet.content);
+    let decryptedContent: string;
+    try {
+      decryptedContent = await service.decrypt(cliplet.content);
+    } catch (error) {
+      console.error(error);
+      new Notice(MESSAGE.decryptFailed);
+      return;
+    }
     const pastedCliplet = await pasteCliplet(editor, { ...cliplet, decryptedContent });
     await service.putCliplet(pastedCliplet);
   }

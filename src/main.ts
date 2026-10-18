@@ -17,6 +17,7 @@ const MESSAGE = {
 export default class Cliplet extends Plugin {
   // Set only after the service has finished initializing (on layout ready).
   private _service: ClipletService | null = null;
+  private _initFailed = false;
   private _settingTab!: SettingTab;
 
   declare settings: Settings;
@@ -71,7 +72,13 @@ export default class Cliplet extends Plugin {
     this.app.workspace.onLayoutReady(async () => {
       const storageType = this.settings.storageType;
       const service = new ClipletService(this.settings.vaultId, this, storageType);
-      await service.init();
+      try {
+        await service.init();
+      } catch (error) {
+        console.error(error);
+        this._initFailed = true;
+        return;
+      }
       this._service = service;
 
       this._settingTab = new SettingTab(this.app, this);
@@ -97,7 +104,7 @@ export default class Cliplet extends Plugin {
   // Returns the service if it is usable; otherwise shows a notice and returns null.
   private getAvailableService(): ClipletService | null {
     if (!this._service) {
-      new Notice(MESSAGE.loading);
+      new Notice(this._initFailed ? MESSAGE.reload : MESSAGE.loading);
       return null;
     }
     if (!this._service.hasDB()) {

@@ -472,21 +472,14 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
     modal.modalEl.style.setProperty('--cliplet-editor-modal-height', `${ref.offsetHeight}px`);
     modal.modalEl.style.setProperty('--cliplet-editor-modal-width', `${ref.offsetWidth}px`);
 
+    modal.setCloseCallback(() => void this.getCliplets());
     modal.open();
-    void modal.whenClosed().then(async () => {
-      await this.getCliplets();
-      modal.modalEl.style.removeProperty('--cliplet-editor-modal-top');
-      modal.modalEl.style.removeProperty('--cliplet-editor-modal-height');
-      modal.modalEl.style.removeProperty('--cliplet-editor-modal-width');
-    });
   }
 
   private openConfirmModal(callback: () => Promise<void>, message: string): void {
     const modal = new ClipletConfirmModal(this.app, callback, message);
+    modal.setCloseCallback(() => void this.getCliplets());
     modal.open();
-    void modal.whenClosed().then(async () => {
-      await this.getCliplets();
-    });
   }
 
   private openActionMenuModal(): void {
@@ -502,10 +495,6 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
     modal.modalEl.style.setProperty('--cliplet-menu-modal-bottom', bottom);
 
     modal.open();
-    void modal.whenClosed().then(() => {
-      modal.modalEl.style.removeProperty('--cliplet-menu-modal-right');
-      modal.modalEl.style.removeProperty('--cliplet-menu-modal-bottom');
-    });
   }
 
   private generateActionMenuItems(): ActionMenuItem[] {

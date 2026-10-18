@@ -16,7 +16,6 @@ export class ClipletEditorModal extends Modal {
     name: '' as string,
     content: '' as string,
   };
-  private _resolveClose: (() => void) | null = null;
   private _textarea = null as HTMLTextAreaElement | null;
   private _textareaCursorPos = { start: 0, end: 0 };
   private _isSaving = false;
@@ -123,13 +122,6 @@ export class ClipletEditorModal extends Modal {
 
   onClose(): void {
     onClipletModalClose();
-    if (this._resolveClose) {
-      this._resolveClose();
-    }
-  }
-
-  whenClosed(): Promise<void> {
-    return new Promise((resolve) => (this._resolveClose = resolve));
   }
 
   private openPlaceholderMenuModal(buttonEl: HTMLButtonElement): void {
@@ -146,10 +138,6 @@ export class ClipletEditorModal extends Modal {
     modal.modalEl.style.setProperty('--cliplet-menu-modal-bottom', bottom);
 
     modal.open();
-    void modal.whenClosed().then(() => {
-      modal.modalEl.style.removeProperty('--cliplet-menu-modal-right');
-      modal.modalEl.style.removeProperty('--cliplet-menu-modal-bottom');
-    });
   }
 
   private renderDecoratedText(container: HTMLElement, text: string): void {

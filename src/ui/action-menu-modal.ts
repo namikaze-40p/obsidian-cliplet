@@ -5,8 +5,6 @@ import { ActionMenuItem } from 'src/core/types';
 import { onClipletModalClose, onClipletModalOpen } from 'src/utils';
 
 export class ActionMenuModal extends FuzzySuggestModal<ActionMenuItem> {
-  private _resolveClose: (() => void) | null = null;
-
   constructor(
     app: App,
     private _onSelectMenuItem: (menuItem: ActionMenuItem) => void,
@@ -29,13 +27,6 @@ export class ActionMenuModal extends FuzzySuggestModal<ActionMenuItem> {
   onClose(): void {
     onClipletModalClose();
     activeDocument.body.classList.remove('cliplet-action-menu-open');
-    if (this._resolveClose) {
-      this._resolveClose();
-    }
-  }
-
-  whenClosed(): Promise<void> {
-    return new Promise((resolve) => (this._resolveClose = resolve));
   }
 
   getItems(): ActionMenuItem[] {

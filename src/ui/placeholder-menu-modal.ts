@@ -3,8 +3,6 @@ import { App, FuzzyMatch, FuzzySuggestModal, setIcon } from 'obsidian';
 import { PlaceholderMenuItem } from 'src/core/types';
 
 export class PlaceholderMenuModal extends FuzzySuggestModal<PlaceholderMenuItem> {
-  private _resolveClose: (() => void) | null = null;
-
   constructor(
     app: App,
     private _onSelectMenuItem: (menuItem: PlaceholderMenuItem) => void,
@@ -14,16 +12,6 @@ export class PlaceholderMenuModal extends FuzzySuggestModal<PlaceholderMenuItem>
 
     this.setPlaceholder('Search placeholder...');
     this.modalEl.addClasses(['cliplet-placeholder-menu-modal', 'cp-modal']);
-  }
-
-  onClose(): void {
-    if (this._resolveClose) {
-      this._resolveClose();
-    }
-  }
-
-  whenClosed(): Promise<void> {
-    return new Promise((resolve) => (this._resolveClose = resolve));
   }
 
   getItems(): PlaceholderMenuItem[] {

@@ -3,7 +3,6 @@ import { App, Modal, Notice, Setting } from 'obsidian';
 import { onClipletModalClose, onClipletModalOpen } from 'src/utils';
 
 export class ClipletConfirmModal extends Modal {
-  private _resolveClose: (() => void) | null = null;
   private _isOpen = false;
 
   constructor(
@@ -55,12 +54,5 @@ export class ClipletConfirmModal extends Modal {
   onClose(): void {
     this._isOpen = false;
     onClipletModalClose();
-    if (this._resolveClose) {
-      this._resolveClose();
-    }
-  }
-
-  whenClosed(): Promise<void> {
-    return new Promise((resolve) => (this._resolveClose = resolve));
   }
 }

@@ -2,7 +2,7 @@
   "id": "cliplet",
   "name": "Cliplet",
   "version": "0.3.10",
-  "minAppVersion": "1.9.10",
+  "minAppVersion": "1.10.0",
   "description": "A clipboard and snippet manager — your own, separate from the OS clipboard.",
   "author": "namikaze-40p",
   "authorUrl": "https://github.com/namikaze-40p",

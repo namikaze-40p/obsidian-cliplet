@@ -1,5 +1,6 @@
 import { deleteDB, IDBPDatabase } from 'idb';
 
+import { normalizeCliplet } from './cliplet-item';
 import { ClipletStoreIdb } from './cliplet-store-idb';
 import crypto from './crypto';
 import { ClipletDBSchema, getDbPromise } from './database';
@@ -59,11 +60,11 @@ export class ClipletServiceIdb implements IClipletServiceBackend {
   }
 
   async addCliplet(value: ClipletItem): Promise<string> {
-    return this._store.add(this.normalizeObject(value));
+    return this._store.add(normalizeCliplet(value));
   }
 
   async putCliplet(value: ClipletItem): Promise<void> {
-    return this._store.put(this.normalizeObject(value));
+    return this._store.put(normalizeCliplet(value));
   }
 
   async deleteCliplet(id: string): Promise<void> {
@@ -75,7 +76,7 @@ export class ClipletServiceIdb implements IClipletServiceBackend {
   }
 
   async replaceAllCliplets(values: ClipletItem[]): Promise<void> {
-    return this._store.replaceAll(values.map((value) => this.normalizeObject(value)));
+    return this._store.replaceAll(values.map(normalizeCliplet));
   }
 
   async deleteExceededRecords(maxCount: number): Promise<void> {
@@ -84,20 +85,5 @@ export class ClipletServiceIdb implements IClipletServiceBackend {
 
   async deleteOverdueRecords(days: number): Promise<void> {
     return this._store.deleteOverdueRecords(days);
-  }
-
-  private normalizeObject(value: ClipletItem): ClipletItem {
-    return {
-      id: value.id,
-      name: value.name,
-      content: value.content,
-      type: value.type,
-      keyword: value.keyword,
-      pinned: value.pinned,
-      count: value.count,
-      created: value.created,
-      lastUsed: value.lastUsed,
-      lastModified: value.lastModified,
-    };
   }
 }

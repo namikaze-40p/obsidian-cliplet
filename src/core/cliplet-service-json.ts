@@ -2,6 +2,7 @@ import { deleteDB, IDBPDatabase } from 'idb';
 
 import Cliplet from 'src/main';
 
+import { normalizeCliplet } from './cliplet-item';
 import { ClipletStoreJson } from './cliplet-store-json';
 import crypto from './crypto';
 import { ClipletDBSchema, getDbPromise } from './database';
@@ -62,11 +63,11 @@ export class ClipletServiceJson implements IClipletServiceBackend {
   }
 
   async addCliplet(value: ClipletItem): Promise<string> {
-    return this._store.add(value);
+    return this._store.add(normalizeCliplet(value));
   }
 
   async putCliplet(value: ClipletItem): Promise<void> {
-    return this._store.put(value);
+    return this._store.put(normalizeCliplet(value));
   }
 
   async deleteCliplet(id: string): Promise<void> {
@@ -78,7 +79,7 @@ export class ClipletServiceJson implements IClipletServiceBackend {
   }
 
   async replaceAllCliplets(values: ClipletItem[]): Promise<void> {
-    return this._store.replaceAll(values);
+    return this._store.replaceAll(values.map(normalizeCliplet));
   }
 
   async deleteExceededRecords(maxCount: number): Promise<void> {

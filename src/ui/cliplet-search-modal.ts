@@ -112,16 +112,15 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
     item: FuzzyMatch<DecryptedClipletItem>,
     suggestionItemEl: HTMLElement,
   ): HTMLElement {
-    const doc = suggestionItemEl.ownerDocument;
-    const fragment = doc.createDocumentFragment();
     const cliplet = item.item;
+    suggestionItemEl.empty();
 
-    const iconWrap = doc.createElement('div');
-    iconWrap.className = 'suggestion-item-icon';
+    const iconWrap = suggestionItemEl.createDiv('suggestion-item-icon');
     const icon = cliplet.pinned ? 'pin' : cliplet.name ? 'tag' : 'clipboard';
     setIcon(iconWrap, icon);
 
-    const textSpan = doc.createElement('span');
+    // Keep the text span as the last child: findClipletItem() reads the cliplet id from it.
+    const textSpan = suggestionItemEl.createSpan();
     if (cliplet.name) {
       textSpan.textContent = cliplet.name;
     } else {
@@ -131,8 +130,6 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
     }
     textSpan.dataset.clipletId = cliplet.id;
 
-    fragment.append(iconWrap, textSpan);
-    suggestionItemEl.replaceChildren(fragment);
     this.attachPointerHandler(suggestionItemEl);
     return suggestionItemEl;
   }
@@ -452,7 +449,11 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
 
   private openActionMenuModal(): void {
     const actionMenuItems = this.generateActionMenuItems();
-    const modal = new ActionMenuModal(this.app, this.onSelectMenuItem.bind(this), actionMenuItems);
+    const modal = new ActionMenuModal(
+      this.app,
+      (item) => void this.onSelectMenuItem(item),
+      actionMenuItems,
+    );
 
     const ref = this.modalEl;
     const menuBottom =

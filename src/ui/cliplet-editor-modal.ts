@@ -23,7 +23,7 @@ export class ClipletEditorModal extends Modal {
     name: '' as string,
     content: '' as string,
   };
-  private _textarea = null as HTMLTextAreaElement | null;
+  private _textarea!: HTMLTextAreaElement;
   private _textareaCursorPos = { start: 0, end: 0 };
   private _isSaving = false;
 
@@ -68,26 +68,25 @@ export class ClipletEditorModal extends Modal {
     const contentEl = new Setting(this.contentEl)
       .setName('Content')
       .setDesc('This content will be inserted when the cliplet is used.')
-      .addTextArea((content) =>
+      .addTextArea((content) => {
+        this._textarea = content.inputEl;
         content
           .setPlaceholder('Enter content')
           .setValue(this._form.content)
           .onChange((value) => {
             this._form.content = value;
-          }),
-      );
+          });
+      });
 
-    this._textarea = contentEl.controlEl.querySelector('textarea') as HTMLTextAreaElement;
     this._textareaCursorPos.start = this._textarea.selectionStart;
     this._textareaCursorPos.end = this._textarea.selectionEnd;
     this._textarea.addEventListener('blur', () => {
-      const { selectionStart = 0, selectionEnd = 0 } = this._textarea || {};
-      this._textareaCursorPos.start = selectionStart;
-      this._textareaCursorPos.end = selectionEnd;
+      this._textareaCursorPos.start = this._textarea.selectionStart;
+      this._textareaCursorPos.end = this._textarea.selectionEnd;
     });
     contentEl.controlEl.createDiv('cliplet-overlay-textarea', (overlayDiv) => {
       overlayDiv.createDiv('', (textViewDiv) => {
-        const textarea = this._textarea as HTMLTextAreaElement;
+        const textarea = this._textarea;
         this.renderDecoratedText(textViewDiv, textarea.value);
 
         textarea.addEventListener('input', () => {
@@ -190,12 +189,12 @@ export class ClipletEditorModal extends Modal {
     }
   }
 
-  private async onSelectMenuItem(item: PlaceholderMenuItem): Promise<void> {
+  private onSelectMenuItem(item: PlaceholderMenuItem): void {
     this.insertAtCursorPosition(item.token);
   }
 
   private insertAtCursorPosition(insertText: string): void {
-    const textarea = this._textarea as HTMLTextAreaElement;
+    const textarea = this._textarea;
     const { start, end } = this._textareaCursorPos;
 
     const value = textarea.value;

@@ -235,7 +235,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
     return this._cliplets.find((item) => item.id === (el as HTMLSpanElement).dataset.clipletId);
   }
 
-  private attachPointerHandler(item: Element): void {
+  private attachPointerHandler(item: HTMLElement): void {
     item.addEventListener('pointerup', (ev: PointerEvent) => {
       if (!['touch', 'pen'].includes(ev.pointerType)) {
         this._lastTappedClipletId = '';

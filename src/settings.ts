@@ -5,6 +5,7 @@ import { ClipletItem, StorageType } from './core/types';
 import { ClipletService } from './core/cliplet-service';
 
 export const DEFAULT_STORAGE_OPTIONS = { idb: 'IndexedDB', json: 'data.json' } as const;
+const isStorageType = (value: string): value is StorageType => value in DEFAULT_STORAGE_OPTIONS;
 const DELETION_CONFIRMATION_TEXT = 'Delete';
 const DELETE_SUCCESS_MESSAGE = 'All Cliplet data has been deleted.\nPlease reload Obsidian.';
 const SWITCH_FAILED_MESSAGE =
@@ -54,7 +55,10 @@ export class SettingTab extends PluginSettingTab {
         dropdown
           .addOptions(DEFAULT_STORAGE_OPTIONS)
           .setValue(this._plugin.settings.storageType || 'idb')
-          .onChange(async (value: StorageType) => {
+          .onChange(async (value) => {
+            if (!isStorageType(value)) {
+              return;
+            }
             // Lock the dropdown while the data is being moved.
             dropdown.setDisabled(true);
             try {

@@ -147,11 +147,12 @@ export class ClipletService {
     await this._store.deleteMany(ids);
   }
 
-  // Keeps the newest unprotected cliplets so that the total stays within maxCount.
-  async deleteExceededRecords(maxCount: number): Promise<void> {
+  // Keeps the newest unprotected cliplets so that the total stays within maxCount,
+  // but always keeps at least minUnprotected of them.
+  async deleteExceededRecords(maxCount: number, minUnprotected: number): Promise<void> {
     const cliplets = await this._store.list();
     const candidates = cliplets.filter((cliplet) => !isProtected(cliplet));
-    const limit = maxCount - (cliplets.length - candidates.length);
+    const limit = Math.max(maxCount - (cliplets.length - candidates.length), minUnprotected);
     if (candidates.length <= limit) {
       return;
     }

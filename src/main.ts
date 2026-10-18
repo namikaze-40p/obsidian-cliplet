@@ -2,7 +2,7 @@ import { Editor, Notice, Plugin } from 'obsidian';
 import dayjs from 'dayjs';
 import { v4 as uuid } from 'uuid';
 
-import { MAXIMUM_RECORDS, RETENTION_PERIOD } from './core/consts';
+import { MAXIMUM_RECORDS, MINIMUM_UNPROTECTED_RECORDS, RETENTION_PERIOD } from './core/consts';
 import { ClipletService } from './core/cliplet-service';
 import { ClipletSearchModal } from './ui/cliplet-search-modal';
 import { DEFAULT_SETTINGS, SettingTab, Settings } from './settings';
@@ -181,7 +181,7 @@ export default class Cliplet extends Plugin {
   }
 
   private async deleteExceededRecords(): Promise<void> {
-    await this.service.deleteExceededRecords(MAXIMUM_RECORDS);
+    await this.service.deleteExceededRecords(MAXIMUM_RECORDS, MINIMUM_UNPROTECTED_RECORDS);
   }
 
   private async deleteOverdueRecords(): Promise<void> {

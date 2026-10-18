@@ -3,7 +3,14 @@ import dayjs from 'dayjs';
 import { v4 as uuid } from 'uuid';
 
 import { ClipletService } from 'src/core/cliplet-service';
-import { IS_APPLE, KEYS, MAXIMUM_RECORDS, PLACEHOLDER_MENU_ITEMS, TOKEN } from 'src/core/consts';
+import {
+  IS_APPLE,
+  KEYS,
+  MAXIMUM_RECORDS,
+  MINIMUM_UNPROTECTED_RECORDS,
+  PLACEHOLDER_MENU_ITEMS,
+  TOKEN,
+} from 'src/core/consts';
 import { ClipletItem, DecryptedClipletItem, PlaceholderMenuItem } from 'src/core/types';
 import Cliplet from 'src/main';
 import { onClipletModalClose, onClipletModalOpen } from 'src/utils';
@@ -246,7 +253,7 @@ export class ClipletEditorModal extends Modal {
     } else {
       await this._service.addCliplet(cliplet);
       // Apply the same record limit as the "Add" command.
-      await this._service.deleteExceededRecords(MAXIMUM_RECORDS);
+      await this._service.deleteExceededRecords(MAXIMUM_RECORDS, MINIMUM_UNPROTECTED_RECORDS);
     }
     this._plugin.settings.latestClipletId = cliplet.id;
     await this._plugin.saveSettings();

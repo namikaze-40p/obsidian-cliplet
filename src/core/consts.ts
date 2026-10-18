@@ -2,6 +2,8 @@ import { Modifier, Platform } from 'obsidian';
 
 export const RETENTION_PERIOD = 60;
 export const MAXIMUM_RECORDS = 200;
+// Unnamed cliplets kept even when protected ones reach MAXIMUM_RECORDS, so that "Add" keeps working.
+export const MINIMUM_UNPROTECTED_RECORDS = 10;
 
 export const IS_APPLE = Platform.isMacOS || Platform.isIosApp;
 

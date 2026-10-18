@@ -170,8 +170,41 @@ describe.each<StorageType>(['idb', 'json'])('ClipletService (%s)', (storageType)
     }
     await service.addCliplet(item('named', { created: daysAgo(30), name: 'n' }));
 
-    await service.deleteExceededRecords(3);
+    await service.deleteExceededRecords(3, 1);
     expect((await ids(service)).sort()).toEqual(['c3', 'c4', 'named']);
+  });
+
+  describe('when protected cliplets fill the limit', () => {
+    const setup = async (protectedCount: number) => {
+      const service = await createService(createPlugin(storageType));
+      for (let i = 1; i <= protectedCount; i++) {
+        await service.addCliplet(item(`named${i}`, { created: daysAgo(30), name: `n${i}` }));
+      }
+      for (let i = 1; i <= 4; i++) {
+        await service.addCliplet(item(`c${i}`, { created: daysAgo(10 - i) }));
+      }
+      return service;
+    };
+    const unnamedIds = async (service: ClipletService) =>
+      (await ids(service)).filter((id) => id.startsWith('c'));
+
+    it.each([3, 4, 6])(
+      'keeps the newest unnamed cliplets up to the minimum (%i protected)',
+      async (protectedCount) => {
+        const service = await setup(protectedCount);
+        await service.deleteExceededRecords(3, 2);
+        expect(await unnamedIds(service)).toEqual(['c4', 'c3']);
+        expect(await ids(service)).toHaveLength(protectedCount + 2);
+      },
+    );
+
+    it('keeps a newly added cliplet', async () => {
+      const service = await setup(5);
+      await service.addCliplet(item('latest'));
+      await service.deleteExceededRecords(3, 2);
+      expect(await unnamedIds(service)).toEqual(['c4']);
+      expect(await service.getCliplet('latest')).toBeDefined();
+    });
   });
 });
 

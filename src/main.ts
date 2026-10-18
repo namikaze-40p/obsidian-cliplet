@@ -95,7 +95,8 @@ export default class Cliplet extends Plugin {
   }
 
   async loadSettings(): Promise<void> {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    // Clone the defaults so that the settings never share arrays with DEFAULT_SETTINGS.
+    this.settings = Object.assign(structuredClone(DEFAULT_SETTINGS), await this.loadData());
   }
 
   async saveSettings(): Promise<void> {

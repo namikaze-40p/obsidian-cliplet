@@ -155,7 +155,7 @@ export default class Cliplet extends Plugin {
       return;
     }
 
-    const cliplet = await service.getCliplet(this.settings.latestClipletId);
+    const cliplet = await service.getLatestCliplet(this.settings.latestClipletId);
     if (!cliplet) {
       new Notice(MESSAGE.notFound);
       return;

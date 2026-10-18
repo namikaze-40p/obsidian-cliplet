@@ -108,8 +108,15 @@ export class ClipletService {
     return crypto.encryptData(value, this._aesKey);
   }
 
-  async getCliplet(id: string): Promise<ClipletItem | undefined> {
-    return this._store.get(id);
+  // Falls back to the most recently used cliplet when the id is not found, e.g. when
+  // latestClipletId was synced from another device whose IndexedDB has different cliplets.
+  async getLatestCliplet(id: string): Promise<ClipletItem | undefined> {
+    const cliplet = id ? await this._store.get(id) : undefined;
+    if (cliplet) {
+      return cliplet;
+    }
+    const cliplets = await this._store.list();
+    return cliplets.sort((a, b) => latestTime(b) - latestTime(a))[0];
   }
 
   async getAllCliplets(): Promise<ClipletItem[]> {

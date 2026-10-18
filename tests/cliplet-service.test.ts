@@ -61,6 +61,8 @@ const item = (id: string, props: Partial<ClipletItem> = {}): ClipletItem => ({
 });
 
 const ids = async (service: ClipletService) => (await service.getAllCliplets()).map(({ id }) => id);
+const find = async (service: ClipletService, id: string) =>
+  (await service.getAllCliplets()).find((cliplet) => cliplet.id === id);
 
 afterEach(() => {
   services.splice(0).forEach((service) => service.closeDB());
@@ -70,13 +72,13 @@ describe.each<StorageType>(['idb', 'json'])('ClipletService (%s)', (storageType)
   it('adds, gets, updates and deletes cliplets', async () => {
     const service = await createService(createPlugin(storageType));
     await service.addCliplet(item('a'));
-    expect((await service.getCliplet('a'))?.id).toBe('a');
+    expect((await find(service, 'a'))?.id).toBe('a');
 
     await service.putCliplet({ ...item('a'), count: 5 });
-    expect((await service.getCliplet('a'))?.count).toBe(5);
+    expect((await find(service, 'a'))?.count).toBe(5);
 
     await service.deleteCliplet('a');
-    expect(await service.getCliplet('a')).toBeUndefined();
+    expect(await find(service, 'a')).toBeUndefined();
   });
 
   it('deletes multiple cliplets at once', async () => {
@@ -93,6 +95,20 @@ describe.each<StorageType>(['idb', 'json'])('ClipletService (%s)', (storageType)
     if (storageType === 'json') {
       expect(plugin.saveCount - saveCount).toBe(1);
     }
+  });
+
+  it('gets the latest cliplet by id, or the most recent one when the id is not found', async () => {
+    const service = await createService(createPlugin(storageType));
+    expect(await service.getLatestCliplet('missing')).toBeUndefined();
+
+    await service.addCliplet(item('old', { created: daysAgo(3) }));
+    await service.addCliplet(item('recent', { created: daysAgo(5), lastUsed: daysAgo(1) }));
+    await service.addCliplet(item('pinned', { created: daysAgo(9), pinned: daysAgo(9) }));
+
+    expect((await service.getLatestCliplet('old'))?.id).toBe('old');
+    // e.g. an id synced from another device whose IndexedDB has different cliplets
+    expect((await service.getLatestCliplet('missing'))?.id).toBe('recent');
+    expect((await service.getLatestCliplet(''))?.id).toBe('recent');
   });
 
   it('does not create a cliplet when updating one that does not exist', async () => {
@@ -203,7 +219,7 @@ describe.each<StorageType>(['idb', 'json'])('ClipletService (%s)', (storageType)
       await service.addCliplet(item('latest'));
       await service.deleteExceededRecords(3, 2);
       expect(await unnamedIds(service)).toEqual(['c4']);
-      expect(await service.getCliplet('latest')).toBeDefined();
+      expect(await find(service, 'latest')).toBeDefined();
     });
   });
 });

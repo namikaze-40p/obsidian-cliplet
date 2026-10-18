@@ -3,7 +3,7 @@ import dayjs from 'dayjs';
 import { v4 as uuid } from 'uuid';
 
 import { ClipletService } from 'src/core/cliplet-service';
-import { IS_APPLE, KEYS, PLACEHOLDER_MENU_ITEMS, TOKEN } from 'src/core/consts';
+import { IS_APPLE, KEYS, MAXIMUM_RECORDS, PLACEHOLDER_MENU_ITEMS, TOKEN } from 'src/core/consts';
 import { ClipletItem, DecryptedClipletItem, PlaceholderMenuItem } from 'src/core/types';
 import Cliplet from 'src/main';
 import { onClipletModalClose, onClipletModalOpen } from 'src/utils';
@@ -19,6 +19,7 @@ export class ClipletEditorModal extends Modal {
   private _resolveClose: (() => void) | null = null;
   private _textarea = null as HTMLTextAreaElement | null;
   private _textareaCursorPos = { start: 0, end: 0 };
+  private _isSaving = false;
 
   constructor(
     app: App,
@@ -29,10 +30,11 @@ export class ClipletEditorModal extends Modal {
     this._service = _plugin.service;
     this._cliplet = _cliplet ? structuredClone(_cliplet) : null;
 
-    this.scope.register([IS_APPLE ? 'Meta' : 'Ctrl'], 'Enter', async (ev) => {
-      await this.saveCliplet();
+    this.scope.register([IS_APPLE ? 'Meta' : 'Ctrl'], 'Enter', (ev) => {
+      // Must be called synchronously; calling these after an await has no effect.
       ev.stopPropagation();
       ev.preventDefault();
+      void this.saveCliplet();
     });
   }
 
@@ -213,7 +215,31 @@ export class ClipletEditorModal extends Modal {
   }
 
   private async saveCliplet(): Promise<void> {
+    // Ignore repeated save requests (e.g. key repeat or double click) while saving.
+    if (this._isSaving) {
+      return;
+    }
     const { name, content } = this._form;
+    if (!content) {
+      new Notice('Content is empty.\nPlease enter content to save.');
+      return;
+    }
+
+    this._isSaving = true;
+    try {
+      await this.persistCliplet(name, content);
+    } catch (error) {
+      console.error(error);
+      new Notice('Failed to save cliplet.');
+      return;
+    } finally {
+      this._isSaving = false;
+    }
+    new Notice('Saved cliplet.');
+    this.close();
+  }
+
+  private async persistCliplet(name: string, content: string): Promise<void> {
     const now = dayjs().unix();
     const cliplet: ClipletItem = {
       id: this._cliplet ? this._cliplet.id : uuid(),
@@ -231,10 +257,10 @@ export class ClipletEditorModal extends Modal {
       await this._service.putCliplet(cliplet);
     } else {
       await this._service.addCliplet(cliplet);
+      // Apply the same record limit as the "Add" command.
+      await this._service.deleteExceededRecords(MAXIMUM_RECORDS);
     }
     this._plugin.settings.latestClipletId = cliplet.id;
     await this._plugin.saveSettings();
-    new Notice('Saved cliplet.');
-    this.close();
   }
 }

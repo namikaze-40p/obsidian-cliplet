@@ -6,22 +6,25 @@
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "test": "vitest run",
     "version": "node version-bump.mjs && git add manifest.json versions.json"
   },
   "keywords": [],
   "author": "namikaze-40p",
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^16.11.6",
+    "@types/node": "24.19.1",
     "@typescript-eslint/eslint-plugin": "^8.42.0",
     "@typescript-eslint/parser": "^8.42.0",
     "cspell": "^8.4.1",
     "esbuild": "^0.28.1",
     "eslint": "^8.57.1",
+    "fake-indexeddb": "6.2.5",
     "obsidian": "^1.14.4",
     "prettier": "3.6.2",
     "tslib": "2.4.0",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "vitest": "5.0.3"
   },
   "dependencies": {
     "dayjs": "^1.11.13",

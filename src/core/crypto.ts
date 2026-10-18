@@ -7,6 +7,16 @@ const salt1 = encoder.encode('cliplet-salt1');
 const salt2 = encoder.encode('cliplet-salt2');
 const HKDF_SALT_V1 = 'cliplet:salt:v1';
 const HKDF_INFO_CEK_V1 = 'cliplet:cek:v1';
+// Spreading a large array into String.fromCharCode exceeds the call stack limit.
+const BASE64_CHUNK_SIZE = 0x8000;
+
+const bytesToBase64 = (bytes: Uint8Array): string => {
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += BASE64_CHUNK_SIZE) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + BASE64_CHUNK_SIZE));
+  }
+  return btoa(binary);
+};
 
 const deriveKey = async (vaultId: string): Promise<CryptoKey> => {
   const ikm = encoder.encode(vaultId);
@@ -31,7 +41,7 @@ const encryptData = async (plaintext: string, key: CryptoKey): Promise<string> =
   const combined = new Uint8Array(iv.length + cipherText.byteLength);
   combined.set(iv);
   combined.set(new Uint8Array(cipherText), iv.length);
-  return btoa(String.fromCharCode(...combined));
+  return bytesToBase64(combined);
 };
 
 const decryptData = async (encoded: string, key: CryptoKey): Promise<string> => {

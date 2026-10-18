@@ -426,8 +426,9 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
       }
       case 'delete': {
         if (this._currentCliplet) {
+          const { id } = this._currentCliplet;
           const callback = async () => {
-            await this._service.deleteCliplet(this._currentCliplet?.id || '');
+            await this._service.deleteCliplet(id);
             new Notice('1 cliplet deleted.');
           };
           const message = 'Are you sure you want to delete this cliplet?';

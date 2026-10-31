@@ -64,6 +64,9 @@ export class ClipletService {
   }
 
   async switchStorage(newType: StorageType): Promise<void> {
+    if (this._isClosed) {
+      throw new Error('The storage cannot be switched until the plugin is reloaded.');
+    }
     if (newType === this.storageType) {
       return;
     }

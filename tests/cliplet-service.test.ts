@@ -383,6 +383,19 @@ describe('ClipletService.switchStorage', () => {
     expect(await ids(service)).toEqual(['a']);
   });
 
+  it.each<StorageType>(['idb', 'json'])(
+    'does not switch from %s after all data is deleted',
+    async (storageType) => {
+      const vaultId = `vault-${vaultCount++}`;
+      const plugin = createPlugin(storageType);
+      const service = await createService(plugin, vaultId);
+      await service.deleteDB();
+
+      await expect(service.switchStorage(storageType === 'idb' ? 'json' : 'idb')).rejects.toThrow();
+      expect(plugin.storageType).toBe(storageType);
+    },
+  );
+
   it('rolls back IndexedDB when copying fails midway', async () => {
     const vaultId = `vault-${vaultCount++}`;
     const existing = await createService(createPlugin('idb'), vaultId);

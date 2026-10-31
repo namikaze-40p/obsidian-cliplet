@@ -7,6 +7,8 @@ export const MINIMUM_UNPROTECTED_RECORDS = 10;
 // In UTF-8 bytes of the plaintext, so that the worst case of storage and memory stays predictable.
 export const MAXIMUM_CONTENT_SIZE = 100 * 1024;
 
+export const RELOAD_MESSAGE = 'Please reload Obsidian to use the “Cliplet” plugin.';
+
 export const IS_APPLE = Platform.isMacOS || Platform.isIosApp;
 
 export const KEYS = {

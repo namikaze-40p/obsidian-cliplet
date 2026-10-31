@@ -11,6 +11,7 @@ import {
 import Cliplet from './main';
 import { ClipletItem, StorageType } from './core/types';
 import { ClipletService } from './core/cliplet-service';
+import { RELOAD_MESSAGE } from './core/consts';
 import { isStorageType } from './core/storage-type';
 
 export const DEFAULT_STORAGE_OPTIONS = { idb: 'IndexedDB', json: 'data.json' } as const;
@@ -95,6 +96,12 @@ export class SettingTab extends PluginSettingTab {
           .setValue(this._plugin.storageType)
           .onChange(async (value) => {
             if (!isStorageType(value)) {
+              return;
+            }
+            // After "Delete all data", the plugin must be reloaded before switching.
+            if (!this._service.hasDB()) {
+              new Notice(RELOAD_MESSAGE);
+              dropdown.setValue(this._plugin.storageType);
               return;
             }
             dropdown.setDisabled(true);

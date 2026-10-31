@@ -2,7 +2,12 @@ import { Editor, Notice, Plugin } from 'obsidian';
 import { v4 as uuid } from 'uuid';
 
 import { getContentSizeError } from './core/cliplet-item';
-import { MAXIMUM_RECORDS, MINIMUM_UNPROTECTED_RECORDS, RETENTION_PERIOD } from './core/consts';
+import {
+  MAXIMUM_RECORDS,
+  MINIMUM_UNPROTECTED_RECORDS,
+  RELOAD_MESSAGE,
+  RETENTION_PERIOD,
+} from './core/consts';
 import { ClipletService } from './core/cliplet-service';
 import { DataFile } from './core/data-file';
 import { resolveStorageType } from './core/storage-type';
@@ -13,7 +18,7 @@ import { pasteCliplet } from './utils';
 
 const MESSAGE = {
   notFound: 'No latest cliplet found.\nPlease add a cliplet first.',
-  reload: 'Please reload Obsidian to use the “Cliplet” plugin.',
+  reload: RELOAD_MESSAGE,
   loading: '“Cliplet” is still loading.\nPlease try again in a moment.',
   decryptFailed: 'The latest cliplet could not be decrypted.',
 };

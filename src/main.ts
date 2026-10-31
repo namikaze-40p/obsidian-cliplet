@@ -4,6 +4,8 @@ import { v4 as uuid } from 'uuid';
 import { getContentSizeError } from './core/cliplet-item';
 import { MAXIMUM_RECORDS, MINIMUM_UNPROTECTED_RECORDS, RETENTION_PERIOD } from './core/consts';
 import { ClipletService } from './core/cliplet-service';
+import { resolveStorageType } from './core/storage-type';
+import { StorageType } from './core/types';
 import { ClipletSearchModal } from './ui/cliplet-search-modal';
 import { DEFAULT_SETTINGS, SettingTab, Settings } from './settings';
 import { pasteCliplet } from './utils';
@@ -14,12 +16,14 @@ const MESSAGE = {
   loading: '“Cliplet” is still loading.\nPlease try again in a moment.',
   decryptFailed: 'The latest cliplet could not be decrypted.',
 };
+const STORAGE_TYPE_KEY = 'cliplet-storage-type';
 
 export default class Cliplet extends Plugin {
   // Set only after the service has finished initializing (on layout ready).
   private _service: ClipletService | null = null;
   private _initFailed = false;
   private _settingTab!: SettingTab;
+  private _storageType!: StorageType;
 
   declare settings: Settings;
 
@@ -30,8 +34,13 @@ export default class Cliplet extends Plugin {
     return this._service;
   }
 
+  get storageType(): StorageType {
+    return this._storageType;
+  }
+
   async onload(): Promise<void> {
     await this.loadSettings();
+    this.loadStorageType();
 
     this.addCommand({
       id: 'add-cliplet',
@@ -71,8 +80,7 @@ export default class Cliplet extends Plugin {
     }
 
     this.app.workspace.onLayoutReady(async () => {
-      const storageType = this.settings.storageType;
-      const service = new ClipletService(this.settings.vaultId, this, storageType);
+      const service = new ClipletService(this.settings.vaultId, this, this._storageType);
       try {
         await service.init();
       } catch (error) {
@@ -101,6 +109,18 @@ export default class Cliplet extends Plugin {
 
   async saveSettings(): Promise<void> {
     await this.saveData(this.settings);
+  }
+
+  // Saved per device, since IndexedDB is per device while data.json is shared with other devices.
+  saveStorageType(type: StorageType): void {
+    this.app.saveLocalStorage(STORAGE_TYPE_KEY, type);
+    this._storageType = type;
+  }
+
+  private loadStorageType(): void {
+    // Saved again so that a storage type taken over from data.json stays on this device.
+    const saved: unknown = this.app.loadLocalStorage(STORAGE_TYPE_KEY);
+    this.saveStorageType(resolveStorageType(saved, this.settings.storageType));
   }
 
   private getAvailableService(): ClipletService | null {

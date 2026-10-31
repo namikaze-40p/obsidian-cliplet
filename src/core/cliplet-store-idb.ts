@@ -42,7 +42,19 @@ export class ClipletStoreIdb implements IClipletStore {
 
   async replaceAll(values: ClipletItem[]): Promise<void> {
     const tx = this._db.transaction(STORE_NAME, 'readwrite');
-    await Promise.all([tx.store.clear(), ...values.map((value) => tx.store.add(value)), tx.done]);
+    const requests: Promise<unknown>[] = [tx.store.clear()];
+    try {
+      for (const value of values) {
+        requests.push(tx.store.add(value));
+      }
+    } catch (error) {
+      // A value that cannot be stored (e.g. without an id) throws synchronously,
+      // which does not abort the transaction by itself.
+      tx.abort();
+      await Promise.allSettled([...requests, tx.done]);
+      throw error;
+    }
+    await Promise.all([...requests, tx.done]);
   }
 
   close(): void {

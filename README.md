@@ -38,8 +38,10 @@ Both options work entirely offline and never send your data to external servers 
 >   - Using `data.json` lets your cliplets sync across devices — **but only if your sync service keeps that file up to date**.  
 >     Some services, like **iCloud**, can be **slow or unreliable** at syncing `data.json`, especially on iPhone or iPad.  
 >     If you frequently use Cliplet across multiple devices, please check how reliably your sync solution updates `data.json` before relying on it.
-> - **Device behavior**: IndexedDB is per device and per vault; `data.json` travels with your vault (Obsidian Sync/Dropbox/Git, etc.).
-> - **Switching**: You can change the storage method in settings. A built-in migration moves all items to the selected storage and deletes them from the previous one.
+> - **Device behavior**: IndexedDB is per device and per vault; `data.json` travels with your vault (Obsidian Sync/Dropbox/Git, etc.). The storage type is also chosen per device, so you can use IndexedDB on one device and `data.json` on another.
+> - **Switching**: You can change the storage method in settings. A built-in migration merges all items into the selected storage. When switching from IndexedDB, the items are deleted from IndexedDB; when switching from `data.json`, they are kept in `data.json` for your other devices.  
+>   Versions before 0.4.0 clear or overwrite `data.json` when switching, so if you sync `data.json` across devices, update Cliplet on all of them before switching.
+> - **Deleting all data**: "Delete all data" in settings deletes the data on the current device. If the device uses `data.json`, the items in `data.json` are deleted as well, which also affects your other devices that use `data.json`.
 > - **Automatic cleanup**: Up to 200 items are kept. Named and pinned items are never deleted automatically, and the 10 most recent unnamed items are always kept, even if you have 200 or more named or pinned items. Unnamed items that have not been used for 60 days are deleted.
 > - **Size limit**: Each item can be up to 100 KB (measured in UTF-8 bytes). Larger content cannot be added or saved; existing larger items can still be pasted.
 

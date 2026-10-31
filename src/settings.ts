@@ -3,16 +3,17 @@ import { App, ButtonComponent, Notice, PluginSettingTab, Setting, TextComponent 
 import Cliplet from './main';
 import { ClipletItem, StorageType } from './core/types';
 import { ClipletService } from './core/cliplet-service';
+import { isStorageType } from './core/storage-type';
 
 export const DEFAULT_STORAGE_OPTIONS = { idb: 'IndexedDB', json: 'data.json' } as const;
-const isStorageType = (value: string): value is StorageType => value in DEFAULT_STORAGE_OPTIONS;
 const DELETION_CONFIRMATION_TEXT = 'Delete';
 const DELETE_SUCCESS_MESSAGE = 'All Cliplet data has been deleted.\nPlease reload Obsidian.';
 const SWITCH_FAILED_MESSAGE =
   'Failed to switch the storage type.\nYour data remains in the current storage.';
 
 export interface Settings {
-  storageType: StorageType;
+  // Only read to take over the storage type synced before 0.4.0; see Cliplet.storageType.
+  storageType?: StorageType;
   latestClipletId: string;
   cliplets: ClipletItem[];
   vaultId: string;
@@ -21,7 +22,6 @@ export interface Settings {
 }
 
 export const DEFAULT_SETTINGS: Settings = {
-  storageType: 'idb',
   latestClipletId: '',
   cliplets: [] as ClipletItem[],
   vaultId: '',
@@ -49,12 +49,12 @@ export class SettingTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName('Storage type')
       .setDesc(
-        'Select the storage location: IndexedDB (per device/vault, no auto-sync) or data.json (in your vault, syncs with backups).',
+        'Select the storage location for this device: IndexedDB (per device/vault, no auto-sync) or data.json (in your vault, syncs with backups). Switching merges your cliplets into the selected storage.',
       )
       .addDropdown((dropdown) =>
         dropdown
           .addOptions(DEFAULT_STORAGE_OPTIONS)
-          .setValue(this._plugin.settings.storageType || 'idb')
+          .setValue(this._plugin.storageType)
           .onChange(async (value) => {
             if (!isStorageType(value)) {
               return;
@@ -65,7 +65,7 @@ export class SettingTab extends PluginSettingTab {
             } catch (error) {
               console.error(error);
               new Notice(SWITCH_FAILED_MESSAGE);
-              dropdown.setValue(this._plugin.settings.storageType);
+              dropdown.setValue(this._plugin.storageType);
             } finally {
               dropdown.setDisabled(false);
             }
@@ -83,7 +83,7 @@ export class SettingTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName('Delete all data')
       .setDesc(
-        'Delete all data of "Cliplet". If you want to delete, type "Delete" in the text box and click the "Delete" button.',
+        'Delete all data of "Cliplet" on this device. When the storage type is data.json, this also deletes the cliplets of other devices that use data.json. If you want to delete, type "Delete" in the text box and click the "Delete" button.',
       )
       .addText((text) => {
         this._deleteText = text;

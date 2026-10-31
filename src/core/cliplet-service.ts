@@ -6,6 +6,7 @@ import Cliplet from 'src/main';
 import { normalizeCliplet } from './cliplet-item';
 import { ClipletStoreIdb } from './cliplet-store-idb';
 import { ClipletStoreJson } from './cliplet-store-json';
+import { MAXIMUM_RECORDS, MINIMUM_UNPROTECTED_RECORDS } from './consts';
 import crypto from './crypto';
 import { deleteDatabase } from './database';
 import { ClipletItem, IClipletStore, StorageType } from './types';
@@ -18,6 +19,18 @@ const isProtected = (cliplet: ClipletItem): boolean =>
   (typeof cliplet.name === 'string' && cliplet.name.trim() !== '') ||
   (typeof cliplet.keyword === 'string' && cliplet.keyword.trim() !== '') ||
   !!cliplet.pinned;
+
+// Merges by id; when both lists have the same cliplet, the more recently updated one wins.
+const mergeCliplets = (a: ClipletItem[], b: ClipletItem[]): ClipletItem[] => {
+  const merged = new Map(a.map((cliplet) => [cliplet.id, cliplet]));
+  for (const cliplet of b) {
+    const other = merged.get(cliplet.id);
+    if (!other || latestTime(cliplet) > latestTime(other)) {
+      merged.set(cliplet.id, cliplet);
+    }
+  }
+  return [...merged.values()].map(normalizeCliplet);
+};
 
 const compare = (a: ClipletItem, b: ClipletItem): number => {
   if (b.pinned > a.pinned) {
@@ -55,15 +68,15 @@ export class ClipletService {
       return;
     }
 
+    const prevType = this.storageType;
     const prev = this._store;
     const next = await this.openStore(newType);
     try {
-      // Copy first and persist the new type; the current storage is untouched until then.
-      await next.replaceAll((await prev.list()).map(normalizeCliplet));
-      this.plugin.settings.storageType = newType;
-      await this.plugin.saveSettings();
+      // Merge instead of overwriting: data.json may hold cliplets of other devices.
+      // The current storage is untouched until the new type is saved.
+      await next.replaceAll(mergeCliplets(await next.list(), await prev.list()));
+      this.plugin.saveStorageType(newType);
     } catch (error) {
-      this.plugin.settings.storageType = this.storageType;
       next.close();
       throw error;
     }
@@ -71,9 +84,17 @@ export class ClipletService {
     this._store = next;
     this.storageType = newType;
 
-    // A failure here only leaves stale copies behind, so it does not fail the switch.
+    // Failures below only leave extra or stale cliplets behind, so they do not fail the switch.
     try {
-      await prev.replaceAll([]);
+      await this.deleteExceededRecords(MAXIMUM_RECORDS, MINIMUM_UNPROTECTED_RECORDS);
+    } catch (error) {
+      console.error(error);
+    }
+    try {
+      // data.json is kept, since other devices may still use it.
+      if (prevType === 'idb') {
+        await prev.replaceAll([]);
+      }
     } catch (error) {
       console.error(error);
     } finally {
@@ -91,13 +112,16 @@ export class ClipletService {
     this._store.close();
   }
 
-  // Deletes the data in both storages, including stale copies left by a storage switch.
+  // Deletes the data of this device, including stale copies left by a storage switch.
+  // data.json is shared with other devices, so it is cleared only when this device uses it.
   async deleteDB(): Promise<void> {
     if (this._isClosed) {
       return;
     }
     this.closeDB();
-    await new ClipletStoreJson(this.plugin).replaceAll([]);
+    if (this.storageType === 'json') {
+      await new ClipletStoreJson(this.plugin).replaceAll([]);
+    }
     await deleteDatabase(this.vaultId);
   }
 

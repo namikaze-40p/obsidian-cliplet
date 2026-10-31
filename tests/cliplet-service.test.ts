@@ -2,24 +2,31 @@ import dayjs from 'dayjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { ClipletService } from 'src/core/cliplet-service';
+import { MAXIMUM_RECORDS } from 'src/core/consts';
 import { ClipletItem, StorageType } from 'src/core/types';
 import Cliplet from 'src/main';
 import { Settings } from 'src/settings';
 
 type FakePlugin = {
-  settings: Pick<Settings, 'storageType' | 'cliplets'>;
-  persisted: Pick<Settings, 'storageType' | 'cliplets'> | null;
+  storageType: StorageType;
+  settings: Pick<Settings, 'cliplets'>;
+  persisted: Pick<Settings, 'cliplets'> | null;
   saveCount: number;
   failOnSave: number | null;
+  failOnSaveStorageType: boolean;
   saveSettings: () => Promise<void>;
+  saveStorageType: (type: StorageType) => void;
 };
 
-// Stands in for the plugin: `persisted` is what would be written to data.json.
+// Stands in for the plugin: `persisted` is what would be written to data.json,
+// and `storageType` is what would be saved on this device.
 const createPlugin = (storageType: StorageType, cliplets: ClipletItem[] = []): FakePlugin => ({
-  settings: { storageType, cliplets: structuredClone(cliplets) },
+  storageType,
+  settings: { cliplets: structuredClone(cliplets) },
   persisted: null,
   saveCount: 0,
   failOnSave: null,
+  failOnSaveStorageType: false,
   async saveSettings() {
     this.saveCount++;
     if (this.failOnSave === this.saveCount) {
@@ -27,17 +34,19 @@ const createPlugin = (storageType: StorageType, cliplets: ClipletItem[] = []): F
     }
     this.persisted = structuredClone(this.settings);
   },
+  saveStorageType(type) {
+    if (this.failOnSaveStorageType) {
+      throw new Error('Failed to save the storage type');
+    }
+    this.storageType = type;
+  },
 });
 
 const services: ClipletService[] = [];
 let vaultCount = 0;
 
 const createService = async (plugin: FakePlugin, vaultId = `vault-${vaultCount++}`) => {
-  const service = new ClipletService(
-    vaultId,
-    plugin as unknown as Cliplet,
-    plugin.settings.storageType,
-  );
+  const service = new ClipletService(vaultId, plugin as unknown as Cliplet, plugin.storageType);
   await service.init();
   services.push(service);
   return service;
@@ -117,19 +126,21 @@ describe.each<StorageType>(['idb', 'json'])('ClipletService (%s)', (storageType)
     expect(await ids(service)).toEqual([]);
   });
 
-  it('deletes the data in both storages and requires a reload', async () => {
+  it('deletes the data of this device and requires a reload', async () => {
     const vaultId = `vault-${vaultCount++}`;
     const idbService = await createService(createPlugin('idb'), vaultId);
     await idbService.addCliplet(item('in-idb'));
     idbService.closeDB();
-    // data.json also holds a stale copy, e.g. left by a failed storage switch.
     const plugin = createPlugin(storageType, [item('in-json')]);
     const service = await createService(plugin, vaultId);
 
     await service.deleteDB();
 
     expect(service.hasDB()).toBe(false);
-    expect(plugin.persisted?.cliplets).toEqual([]);
+    // data.json is shared with other devices, so it is cleared only when this device uses it.
+    expect(plugin.settings.cliplets.map(({ id }) => id)).toEqual(
+      storageType === 'json' ? [] : ['in-json'],
+    );
     const reopened = await createService(createPlugin('idb'), vaultId);
     expect(await ids(reopened)).toEqual([]);
   });
@@ -251,40 +262,71 @@ describe.each<StorageType>(['idb', 'json'])('ClipletService (%s)', (storageType)
 });
 
 describe('ClipletService.switchStorage', () => {
-  it('moves cliplets from IndexedDB to data.json', async () => {
+  it('merges cliplets from IndexedDB into data.json and clears IndexedDB', async () => {
     const vaultId = `vault-${vaultCount++}`;
-    const plugin = createPlugin('idb');
+    // data.json already holds cliplets of other devices.
+    const plugin = createPlugin('idb', [
+      item('other'),
+      item('newer-in-idb', { created: daysAgo(9), lastUsed: daysAgo(2) }),
+      item('newer-in-json', { created: daysAgo(9), lastUsed: daysAgo(1), count: 1 }),
+    ]);
     const service = await createService(plugin, vaultId);
     await service.addCliplet(item('a'));
-    await service.addCliplet(item('b'));
+    await service.addCliplet(
+      item('newer-in-idb', { created: daysAgo(9), lastUsed: daysAgo(1), count: 2 }),
+    );
+    await service.addCliplet(
+      item('newer-in-json', { created: daysAgo(9), lastUsed: daysAgo(2), count: 3 }),
+    );
 
     await service.switchStorage('json');
 
-    expect(plugin.persisted?.storageType).toBe('json');
-    expect(plugin.persisted?.cliplets.map(({ id }) => id).sort()).toEqual(['a', 'b']);
+    expect(plugin.storageType).toBe('json');
+    const persisted = plugin.persisted?.cliplets ?? [];
+    expect(persisted.map(({ id }) => id).sort()).toEqual(
+      ['a', 'newer-in-idb', 'newer-in-json', 'other'].sort(),
+    );
+    expect(persisted.find(({ id }) => id === 'newer-in-idb')?.count).toBe(2);
+    expect(persisted.find(({ id }) => id === 'newer-in-json')?.count).toBe(1);
     const idbOnly = await createService(createPlugin('idb'), vaultId);
     expect(await ids(idbOnly)).toEqual([]);
   });
 
-  it('moves cliplets from data.json to IndexedDB', async () => {
+  it('copies cliplets from data.json to IndexedDB and keeps them in data.json', async () => {
     const plugin = createPlugin('json', [item('a'), item('b')]);
     const service = await createService(plugin);
 
     await service.switchStorage('idb');
 
+    expect(plugin.storageType).toBe('idb');
     expect((await ids(service)).sort()).toEqual(['a', 'b']);
-    expect(plugin.persisted).toMatchObject({ storageType: 'idb', cliplets: [] });
+    // Other devices may still use data.json.
+    expect(plugin.settings.cliplets.map(({ id }) => id)).toEqual(['a', 'b']);
+  });
+
+  it('keeps only the newest cliplets up to the limit after merging', async () => {
+    const plugin = createPlugin(
+      'idb',
+      Array.from({ length: MAXIMUM_RECORDS }, (_, i) => item(`json${i}`, { created: daysAgo(2) })),
+    );
+    const service = await createService(plugin);
+    await service.addCliplet(item('idb', { created: daysAgo(1) }));
+
+    await service.switchStorage('json');
+
+    const persisted = plugin.persisted?.cliplets ?? [];
+    expect(persisted).toHaveLength(MAXIMUM_RECORDS);
+    expect(persisted.some(({ id }) => id === 'idb')).toBe(true);
   });
 
   it('keeps the current storage when saving the new type fails', async () => {
     const plugin = createPlugin('idb');
     const service = await createService(plugin);
     await service.addCliplet(item('a'));
-    // 1st save: copy to data.json, 2nd save: storage type
-    plugin.failOnSave = 2;
+    plugin.failOnSaveStorageType = true;
 
     await expect(service.switchStorage('json')).rejects.toThrow();
-    expect(plugin.settings.storageType).toBe('idb');
+    expect(plugin.storageType).toBe('idb');
     expect(await ids(service)).toEqual(['a']);
   });
 
@@ -292,13 +334,14 @@ describe('ClipletService.switchStorage', () => {
     const vaultId = `vault-${vaultCount++}`;
     const existing = await createService(createPlugin('idb'), vaultId);
     await existing.addCliplet(item('stale'));
-    // Duplicate ids make the second insert fail inside the transaction.
-    const plugin = createPlugin('json', [item('x'), item('x')]);
+    // A cliplet without an id makes its insert fail inside the transaction.
+    const broken = { ...item('broken'), id: undefined as unknown as string };
+    const plugin = createPlugin('json', [item('x'), broken]);
     const service = await createService(plugin, vaultId);
 
     await expect(service.switchStorage('idb')).rejects.toThrow();
     expect(await ids(existing)).toEqual(['stale']);
-    expect(plugin.settings).toMatchObject({ storageType: 'json' });
+    expect(plugin.storageType).toBe('json');
     expect(plugin.settings.cliplets).toHaveLength(2);
   });
 });

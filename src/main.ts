@@ -1,5 +1,4 @@
 import { Editor, Notice, Plugin } from 'obsidian';
-import dayjs from 'dayjs';
 import { v4 as uuid } from 'uuid';
 
 import { MAXIMUM_RECORDS, MINIMUM_UNPROTECTED_RECORDS, RETENTION_PERIOD } from './core/consts';
@@ -121,31 +120,11 @@ export default class Cliplet extends Plugin {
       return;
     }
 
-    const now = dayjs().unix();
-    const duplicate = await service.findClipletByContent(content);
-    if (duplicate) {
-      await service.putCliplet({ ...duplicate, lastUsed: now });
-      this.settings.latestClipletId = duplicate.id;
-      await this.saveSettings();
-      return;
+    const { id, isNew } = await service.addContent(content);
+    if (isNew) {
+      await this.deleteExceededRecords();
     }
-
-    const id = uuid();
-    const cliplet = {
-      id,
-      name: '',
-      content: await service.encrypt(content),
-      type: 'text',
-      keyword: '',
-      pinned: 0,
-      count: 0,
-      created: now,
-      lastUsed: 0,
-      lastModified: 0,
-    };
-    const clipletId = await service.addCliplet(cliplet);
-    await this.deleteExceededRecords();
-    this.settings.latestClipletId = clipletId;
+    this.settings.latestClipletId = id;
     await this.saveSettings();
   }
 

@@ -1,4 +1,5 @@
 import dayjs from 'dayjs';
+import { v4 as uuid } from 'uuid';
 
 import Cliplet from 'src/main';
 
@@ -135,6 +136,30 @@ export class ClipletService {
       }
     }
     return undefined;
+  }
+
+  // Adds the content as a new cliplet, or marks the cliplet with the same content as used.
+  async addContent(content: string): Promise<{ id: string; isNew: boolean }> {
+    const now = dayjs().unix();
+    const duplicate = await this.findClipletByContent(content);
+    if (duplicate) {
+      await this.putCliplet({ ...duplicate, lastUsed: now });
+      return { id: duplicate.id, isNew: false };
+    }
+
+    const id = await this.addCliplet({
+      id: uuid(),
+      name: '',
+      content: await this.encrypt(content),
+      type: 'text',
+      keyword: '',
+      pinned: 0,
+      count: 0,
+      created: now,
+      lastUsed: 0,
+      lastModified: 0,
+    });
+    return { id, isNew: true };
   }
 
   async addCliplet(value: ClipletItem): Promise<string> {

@@ -153,6 +153,21 @@ describe.each<StorageType>(['idb', 'json'])('ClipletService (%s)', (storageType)
     expect(await service.findClipletByContent('missing')).toBeUndefined();
   });
 
+  it('adds content as a new cliplet, or marks the duplicate as used', async () => {
+    const service = await createService(createPlugin(storageType));
+
+    const added = await service.addContent('hello');
+    expect(added.isNew).toBe(true);
+    const cliplet = await find(service, added.id);
+    expect(cliplet && (await service.decrypt(cliplet.content))).toBe('hello');
+    expect(cliplet?.lastUsed).toBe(0);
+
+    const duplicate = await service.addContent('hello');
+    expect(duplicate).toEqual({ id: added.id, isNew: false });
+    expect(await ids(service)).toEqual([added.id]);
+    expect((await find(service, added.id))?.lastUsed).toBeGreaterThan(0);
+  });
+
   it('never persists plaintext fields', async () => {
     const plugin = createPlugin(storageType);
     const service = await createService(plugin);

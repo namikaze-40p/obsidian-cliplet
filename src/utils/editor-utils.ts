@@ -4,7 +4,7 @@ import dayjs from 'dayjs';
 import { TOKEN } from 'src/core/consts';
 import { DecryptedClipletItem } from 'src/core/types';
 
-import { getClipboard, replaceWithClipboardText } from './text-utils';
+import { getClipboard, removeCursorTokens, replaceWithClipboardText } from './text-utils';
 
 // Line breaks are split the same way as CodeMirror (\r\n, \r, \n).
 const getEndPosition = (from: EditorPosition, text: string): EditorPosition => {
@@ -35,7 +35,7 @@ export const pasteCliplet = async (
     editor.setCursor(getEndPosition(from, replacedContent));
   } else {
     const before = content.slice(0, tokenIndex);
-    const after = content.slice(tokenIndex + TOKEN.cursor.length);
+    const after = removeCursorTokens(content.slice(tokenIndex + TOKEN.cursor.length));
     const replacedBefore = await replaceWithClipboardText(before, clipboard);
     const replacedAfter = await replaceWithClipboardText(after, clipboard);
     const pasteText = replacedBefore + replacedAfter;

@@ -56,10 +56,17 @@ describe('pasteCliplet', () => {
     ['{cursor} after line breaks', 'a\nbc{cursor}d', 'xxa\nbc|dyy'],
     ['{cursor} at the start', '{cursor}a\nb', 'xx|a\nbyy'],
     ['{clipboard} token', '<{clipboard}>', 'xx<CLIP>|yy'],
+    ['additional {cursor}s', 'a{cursor}b{cursor}c\n{cursor}d', 'xxa|bc\ndyy'],
   ])('places the cursor correctly: %s', async (_, content, expected) => {
     const { editor, result } = createEditor('xxyy', { line: 0, ch: 2 });
     await pasteCliplet(editor, cliplet(content), 'CLIP');
     expect(result()).toBe(expected);
+  });
+
+  it('keeps {cursor} in the clipboard text', async () => {
+    const { editor, result } = createEditor('xxyy', { line: 0, ch: 2 });
+    await pasteCliplet(editor, cliplet('{cursor}{clipboard}{cursor}'), '{cursor}');
+    expect(result()).toBe('xx|{cursor}yy');
   });
 
   it('pastes on a later line', async () => {

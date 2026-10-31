@@ -15,6 +15,10 @@ export const replaceWithClipboardText = async (
   return content.split(TOKEN.clipboard).join(replaceText);
 };
 
+// Only the first {cursor} moves the cursor; the others are removed.
+export const removeCursorTokens = (content: string): string =>
+  content.split(TOKEN.cursor).join('');
+
 export const getClipboard = async (): Promise<string> => {
   try {
     if (!('clipboard' in navigator) || !navigator.clipboard?.readText) {
@@ -29,7 +33,8 @@ export const getClipboard = async (): Promise<string> => {
 
 export const copyToClipboard = async (text: string): Promise<void> => {
   try {
-    const replacedText = (await replaceWithClipboardText(text)).replace(TOKEN.cursor, '');
+    // Tokens are removed first, so that a {cursor} in the clipboard text is kept.
+    const replacedText = await replaceWithClipboardText(removeCursorTokens(text));
     await navigator.clipboard.writeText(replacedText);
     new Notice('Copied to clipboard');
   } catch {

@@ -63,7 +63,7 @@ Use the following placeholders when writing cliplets:
 
 | Placeholder   | Description　                                                                                           | Input example         | Output example                            |
 | ------------- | ------------------------------------------------------------------------------------------------------- | --------------------- | ----------------------------------------- |
-| `{cursor}`    | Moves the cursor to the **first** `{cursor}` found in the text. Any additional `{cursor}`s are ignored. | `Hello {cursor}world` | `Hello │world`                            |
+| `{cursor}`    | Moves the cursor to the **first** `{cursor}` found in the text. Any additional `{cursor}`s are removed. | `Hello {cursor}world` | `Hello │world`                            |
 | `{clipboard}` | Inserts the current OS clipboard text at this point.                                                    | `Text: {clipboard}`   | `Text: apple`<br>(If clipboard = `apple`) |
 
 ## Installation

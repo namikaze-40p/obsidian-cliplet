@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { replaceWithClipboardText } from 'src/utils/text-utils';
+import { copyToClipboard, removeCursorTokens, replaceWithClipboardText } from 'src/utils/text-utils';
 
 describe('replaceWithClipboardText', () => {
   it('replaces every {clipboard} token', async () => {
@@ -33,5 +33,26 @@ describe('replaceWithClipboardText', () => {
 
   it('does not replace tokens inside the inserted text again', async () => {
     expect(await replaceWithClipboardText('A{clipboard}B', '{clipboard}')).toBe('A{clipboard}B');
+  });
+});
+
+describe('removeCursorTokens', () => {
+  it('removes every {cursor} token', () => {
+    expect(removeCursorTokens('a{cursor}b{cursor}')).toBe('ab');
+  });
+});
+
+describe('copyToClipboard', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('removes every {cursor} token but keeps the one in the clipboard text', async () => {
+    const writeText = vi.fn(async () => {});
+    vi.stubGlobal('navigator', { clipboard: { readText: async () => '{cursor}', writeText } });
+
+    await copyToClipboard('{cursor}a{clipboard}b{cursor}');
+
+    expect(writeText).toHaveBeenCalledWith('a{cursor}b');
   });
 });

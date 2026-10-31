@@ -11,6 +11,7 @@ import {
   onClipletModalClose,
   onClipletModalOpen,
   pasteCliplet,
+  removeCursorTokens,
 } from 'src/utils';
 
 import { ActionMenuModal } from './action-menu-modal';
@@ -280,7 +281,7 @@ export class ClipletSearchModal extends FuzzySuggestModal<DecryptedClipletItem> 
     if (text.includes(TOKEN.cursor)) {
       const tokenIndex = text.indexOf(TOKEN.cursor);
       const before = text.slice(0, tokenIndex);
-      const after = text.slice(tokenIndex + TOKEN.cursor.length);
+      const after = removeCursorTokens(text.slice(tokenIndex + TOKEN.cursor.length));
       this.renderWithClipboardReplacement(el.createSpan(''), before);
       el.createSpan('cliplet-token-cursor');
       this.renderWithClipboardReplacement(el.createSpan(''), after);

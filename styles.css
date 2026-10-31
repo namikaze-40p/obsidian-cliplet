@@ -350,6 +350,11 @@ body.theme-dark .cliplet-legend-label {
   }
 }
 
+/* Keeps room for typing "Delete" when the long description narrows the control (e.g. on iPad). */
+.ct-delete-input {
+  min-width: 8em;
+}
+
 body.is-phone {
   .cliplet-search-modal.cs-modal.prompt {
     grid-template-columns: 100%;

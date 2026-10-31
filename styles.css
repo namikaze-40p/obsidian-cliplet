@@ -339,6 +339,17 @@ body.theme-dark .cliplet-legend-label {
   }
 }
 
+/* Links in setting descriptions are not colored, so use the accent color like links in notes. */
+.cliplet-setting-link {
+  color: var(--text-accent);
+  text-decoration-line: var(--link-decoration);
+
+  &:hover {
+    color: var(--text-accent-hover);
+    text-decoration-line: var(--link-decoration-hover);
+  }
+}
+
 body.is-phone {
   .cliplet-search-modal.cs-modal.prompt {
     grid-template-columns: 100%;

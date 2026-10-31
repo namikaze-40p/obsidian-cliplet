@@ -84,6 +84,7 @@ export class SettingTab extends PluginSettingTab {
           fragment.appendText(STORAGE_TYPE.desc);
           fragment.createEl('br');
           fragment.createEl('a', {
+            cls: 'cliplet-setting-link',
             text: 'See "Storage Options" for details.',
             href: 'https://github.com/namikaze-40p/obsidian-cliplet?tab=readme-ov-file#storage-options',
             title: 'Go to GitHub',

@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { ClipletService } from 'src/core/cliplet-service';
 import { MAXIMUM_RECORDS } from 'src/core/consts';
+import { DataFile } from 'src/core/data-file';
 import { ClipletItem, StorageType } from 'src/core/types';
 import Cliplet from 'src/main';
 import { Settings } from 'src/settings';
@@ -14,33 +15,43 @@ type FakePlugin = {
   saveCount: number;
   failOnSave: number | null;
   failOnSaveStorageType: boolean;
-  saveSettings: () => Promise<void>;
+  saveSettings: (change?: (cliplets: ClipletItem[]) => ClipletItem[]) => Promise<void>;
   saveStorageType: (type: StorageType) => void;
 };
 
-// Stands in for the plugin: `persisted` is what would be written to data.json,
+// Stands in for the plugin: `persisted` is what is written to data.json,
 // and `storageType` is what would be saved on this device.
-const createPlugin = (storageType: StorageType, cliplets: ClipletItem[] = []): FakePlugin => ({
-  storageType,
-  settings: { cliplets: structuredClone(cliplets) },
-  persisted: null,
-  saveCount: 0,
-  failOnSave: null,
-  failOnSaveStorageType: false,
-  async saveSettings() {
-    this.saveCount++;
-    if (this.failOnSave === this.saveCount) {
-      throw new Error('Failed to write data.json');
-    }
-    this.persisted = structuredClone(this.settings);
-  },
-  saveStorageType(type) {
-    if (this.failOnSaveStorageType) {
-      throw new Error('Failed to save the storage type');
-    }
-    this.storageType = type;
-  },
-});
+const createPlugin = (storageType: StorageType, cliplets: ClipletItem[] = []): FakePlugin => {
+  const plugin: FakePlugin = {
+    storageType,
+    settings: { cliplets: structuredClone(cliplets) },
+    persisted: { cliplets: structuredClone(cliplets) },
+    saveCount: 0,
+    failOnSave: null,
+    failOnSaveStorageType: false,
+    // Same as Cliplet.saveSettings.
+    async saveSettings(change) {
+      this.settings.cliplets = await dataFile.write(this.settings, change);
+    },
+    saveStorageType(type) {
+      if (this.failOnSaveStorageType) {
+        throw new Error('Failed to save the storage type');
+      }
+      this.storageType = type;
+    },
+  };
+  const dataFile = new DataFile<Pick<Settings, 'cliplets'>>(
+    async () => structuredClone(plugin.persisted),
+    async (data) => {
+      plugin.saveCount++;
+      if (plugin.failOnSave === plugin.saveCount) {
+        throw new Error('Failed to write data.json');
+      }
+      plugin.persisted = structuredClone(data);
+    },
+  );
+  return plugin;
+};
 
 const services: ClipletService[] = [];
 let vaultCount = 0;
@@ -258,6 +269,48 @@ describe.each<StorageType>(['idb', 'json'])('ClipletService (%s)', (storageType)
       expect(await unnamedIds(service)).toEqual(['c4']);
       expect(await find(service, 'latest')).toBeDefined();
     });
+  });
+});
+
+describe('ClipletService (json) with changes from other devices', () => {
+  // Another device saved data.json after this one read it.
+  const syncFromOtherDevice = (plugin: FakePlugin, cliplets: ClipletItem[]) => {
+    plugin.persisted = { cliplets };
+  };
+
+  it('keeps the cliplets saved by another device when adding', async () => {
+    const plugin = createPlugin('json', [item('a')]);
+    const service = await createService(plugin);
+    syncFromOtherDevice(plugin, [item('a'), item('remote')]);
+
+    await service.addCliplet(item('b'));
+
+    expect(plugin.persisted?.cliplets.map(({ id }) => id)).toEqual(['a', 'remote', 'b']);
+    expect((await ids(service)).sort()).toEqual(['a', 'b', 'remote']);
+  });
+
+  it('applies updates and deletions to the latest data.json', async () => {
+    const plugin = createPlugin('json', [item('a'), item('b')]);
+    const service = await createService(plugin);
+    syncFromOtherDevice(plugin, [item('a'), item('b'), item('remote')]);
+
+    await service.putCliplet({ ...item('a'), count: 5 });
+    await service.deleteCliplet('b');
+
+    expect(plugin.persisted?.cliplets.map(({ id, count }) => [id, count])).toEqual([
+      ['a', 5],
+      ['remote', 0],
+    ]);
+  });
+
+  it('does not write data.json when there is nothing to delete', async () => {
+    const plugin = createPlugin('json', [item('a')]);
+    const service = await createService(plugin);
+
+    await service.deleteCliplets([]);
+    await service.deleteOverdueRecords(60);
+
+    expect(plugin.saveCount).toBe(0);
   });
 });
 

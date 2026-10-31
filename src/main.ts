@@ -4,8 +4,9 @@ import { v4 as uuid } from 'uuid';
 import { getContentSizeError } from './core/cliplet-item';
 import { MAXIMUM_RECORDS, MINIMUM_UNPROTECTED_RECORDS, RETENTION_PERIOD } from './core/consts';
 import { ClipletService } from './core/cliplet-service';
+import { DataFile } from './core/data-file';
 import { resolveStorageType } from './core/storage-type';
-import { StorageType } from './core/types';
+import { ClipletItem, StorageType } from './core/types';
 import { ClipletSearchModal } from './ui/cliplet-search-modal';
 import { DEFAULT_SETTINGS, SettingTab, Settings } from './settings';
 import { pasteCliplet } from './utils';
@@ -24,6 +25,10 @@ export default class Cliplet extends Plugin {
   private _initFailed = false;
   private _settingTab!: SettingTab;
   private _storageType!: StorageType;
+  private readonly _dataFile = new DataFile<Settings>(
+    () => this.loadData(),
+    (data) => this.saveData(data),
+  );
 
   declare settings: Settings;
 
@@ -107,8 +112,14 @@ export default class Cliplet extends Plugin {
     this.settings = Object.assign(structuredClone(DEFAULT_SETTINGS), await this.loadData());
   }
 
-  async saveSettings(): Promise<void> {
-    await this.saveData(this.settings);
+  // Called when data.json is changed by a sync service or another program.
+  async onExternalSettingsChange(): Promise<void> {
+    await this.loadSettings();
+  }
+
+  // `change` updates the cliplets in data.json; without it, they are kept as they are on disk.
+  async saveSettings(change?: (cliplets: ClipletItem[]) => ClipletItem[]): Promise<void> {
+    this.settings.cliplets = await this._dataFile.write(this.settings, change);
   }
 
   // Saved per device, since IndexedDB is per device while data.json is shared with other devices.

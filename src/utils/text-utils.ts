@@ -16,8 +16,7 @@ export const replaceWithClipboardText = async (
 };
 
 // Only the first {cursor} moves the cursor; the others are removed.
-export const removeCursorTokens = (content: string): string =>
-  content.split(TOKEN.cursor).join('');
+export const removeCursorTokens = (content: string): string => content.split(TOKEN.cursor).join('');
 
 export const getClipboard = async (): Promise<string> => {
   try {

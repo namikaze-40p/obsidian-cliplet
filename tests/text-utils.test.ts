@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { copyToClipboard, removeCursorTokens, replaceWithClipboardText } from 'src/utils/text-utils';
+import {
+  copyToClipboard,
+  removeCursorTokens,
+  replaceWithClipboardText,
+} from 'src/utils/text-utils';
 
 describe('replaceWithClipboardText', () => {
   it('replaces every {clipboard} token', async () => {

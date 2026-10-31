@@ -339,12 +339,6 @@ body.theme-dark .cliplet-legend-label {
   }
 }
 
-.cliplet-link-for-storage-options {
-  font-size: 0.75rem;
-  margin-left: 0.5rem;
-  margin-bottom: 1rem;
-}
-
 body.is-phone {
   .cliplet-search-modal.cs-modal.prompt {
     grid-template-columns: 100%;

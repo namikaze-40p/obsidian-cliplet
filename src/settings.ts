@@ -1,4 +1,12 @@
-import { App, ButtonComponent, Notice, PluginSettingTab, Setting, TextComponent } from 'obsidian';
+import {
+  App,
+  ButtonComponent,
+  Notice,
+  PluginSettingTab,
+  Setting,
+  SettingDefinitionItem,
+  TextComponent,
+} from 'obsidian';
 
 import Cliplet from './main';
 import { ClipletItem, StorageType } from './core/types';
@@ -29,10 +37,19 @@ export const DEFAULT_SETTINGS: Settings = {
   schemaVersion: 1,
 } as const;
 
+const STORAGE_TYPE = {
+  name: 'Storage type',
+  desc: 'Select the storage location for this device: IndexedDB (per device/vault, no auto-sync) or data.json (in your vault, syncs with backups). Switching merges your cliplets into the selected storage.',
+  aliases: ['IndexedDB', 'data.json', 'sync'],
+};
+const DELETE_ALL_DATA = {
+  name: 'Delete all data',
+  desc: 'Delete all data of "Cliplet" on this device. When the storage type is data.json, this also deletes the cliplets of other devices that use data.json. If you want to delete, type "Delete" in the text box and click the "Delete" button.',
+  aliases: ['reset', 'clear'],
+};
+
 export class SettingTab extends PluginSettingTab {
   private _service: ClipletService;
-  private _deleteText!: TextComponent;
-  private _deleteBtn!: ButtonComponent;
 
   constructor(
     private _app: App,
@@ -42,14 +59,35 @@ export class SettingTab extends PluginSettingTab {
     this._service = _plugin.service;
   }
 
+  // Makes the settings appear in Obsidian's settings search (Obsidian 1.13.0+).
+  getSettingDefinitions(): SettingDefinitionItem[] {
+    return [
+      { ...STORAGE_TYPE, render: (setting) => this.renderStorageType(setting) },
+      { ...DELETE_ALL_DATA, render: (setting) => this.renderDeleteAllData(setting) },
+    ];
+  }
+
+  // Used only by Obsidian before 1.13.0, which does not call getSettingDefinitions().
   display(): void {
     const { containerEl } = this;
     containerEl.empty();
+    this.renderStorageType(new Setting(containerEl));
+    this.renderDeleteAllData(new Setting(containerEl));
+  }
 
-    new Setting(containerEl)
-      .setName('Storage type')
+  private renderStorageType(setting: Setting): void {
+    setting
+      .setName(STORAGE_TYPE.name)
       .setDesc(
-        'Select the storage location for this device: IndexedDB (per device/vault, no auto-sync) or data.json (in your vault, syncs with backups). Switching merges your cliplets into the selected storage.',
+        createFragment((fragment) => {
+          fragment.appendText(STORAGE_TYPE.desc);
+          fragment.createEl('br');
+          fragment.createEl('a', {
+            text: 'See "Storage Options" for details.',
+            href: 'https://github.com/namikaze-40p/obsidian-cliplet?tab=readme-ov-file#storage-options',
+            title: 'Go to GitHub',
+          });
+        }),
       )
       .addDropdown((dropdown) =>
         dropdown
@@ -71,34 +109,24 @@ export class SettingTab extends PluginSettingTab {
             }
           }),
       );
+  }
 
-    containerEl.createDiv('cliplet-link-for-storage-options', (divEl) => {
-      divEl.createEl('a', {
-        text: 'See "Storage Options" for details.',
-        href: 'https://github.com/namikaze-40p/obsidian-cliplet?tab=readme-ov-file#storage-options',
-        title: 'Go to GitHub',
-      });
-    });
-
-    new Setting(containerEl)
-      .setName('Delete all data')
-      .setDesc(
-        'Delete all data of "Cliplet" on this device. When the storage type is data.json, this also deletes the cliplets of other devices that use data.json. If you want to delete, type "Delete" in the text box and click the "Delete" button.',
-      )
+  private renderDeleteAllData(setting: Setting): void {
+    let deleteText: TextComponent;
+    let deleteBtn: ButtonComponent;
+    setting
+      .setName(DELETE_ALL_DATA.name)
+      .setDesc(DELETE_ALL_DATA.desc)
       .addText((text) => {
-        this._deleteText = text;
+        deleteText = text;
         text.setPlaceholder('Delete').onChange((value) => {
-          if (value === DELETION_CONFIRMATION_TEXT) {
-            this._deleteBtn.setDisabled(false);
-          } else {
-            this._deleteBtn.setDisabled(true);
-          }
+          deleteBtn.setDisabled(value !== DELETION_CONFIRMATION_TEXT);
         });
         text.inputEl.addClass('ct-delete-input');
         return text;
       })
       .addButton((button) => {
-        this._deleteBtn = button;
+        deleteBtn = button;
         return button
           .setButtonText('Delete')
           .setDisabled(true)
@@ -107,8 +135,8 @@ export class SettingTab extends PluginSettingTab {
             new Notice(DELETE_SUCCESS_MESSAGE);
             this._plugin.settings.latestClipletId = '';
             await this._plugin.saveSettings();
-            this._deleteText.setValue('');
-            this._deleteBtn.setDisabled(true);
+            deleteText.setValue('');
+            deleteBtn.setDisabled(true);
           });
       });
   }

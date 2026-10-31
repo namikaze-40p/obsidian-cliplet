@@ -125,8 +125,13 @@ export class ClipletService {
   }
 
   // Ciphertexts differ on every encryption (random IV), so compare decrypted contents.
+  // Only cliplets whose ciphertext has the matching length can have the same content.
   async findClipletByContent(content: string): Promise<ClipletItem | undefined> {
-    for (const cliplet of await this.getAllCliplets()) {
+    const length = crypto.getEncryptedLength(content);
+    const candidates = (await this.getAllCliplets()).filter(
+      (cliplet) => cliplet.content.length === length,
+    );
+    for (const cliplet of candidates) {
       try {
         if ((await this.decrypt(cliplet.content)) === content) {
           return cliplet;

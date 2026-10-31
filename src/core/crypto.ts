@@ -33,8 +33,16 @@ const deriveKey = async (vaultId: string): Promise<CryptoKey> => {
   );
 };
 
+const IV_LENGTH = 12;
+// AES-GCM appends a 128-bit authentication tag to the ciphertext.
+const TAG_LENGTH = 16;
+
+// The length of what encryptData returns, which depends only on the plaintext length.
+const getEncryptedLength = (plaintext: string): number =>
+  Math.ceil((IV_LENGTH + encoder.encode(plaintext).length + TAG_LENGTH) / 3) * 4;
+
 const encryptData = async (plaintext: string, key: CryptoKey): Promise<string> => {
-  const iv = getRandomValues(new Uint8Array(12));
+  const iv = getRandomValues(new Uint8Array(IV_LENGTH));
   const cipherText = await subtle.encrypt({ name: 'AES-GCM', iv }, key, encoder.encode(plaintext));
   const combined = new Uint8Array(iv.length + cipherText.byteLength);
   combined.set(iv);
@@ -44,14 +52,15 @@ const encryptData = async (plaintext: string, key: CryptoKey): Promise<string> =
 
 const decryptData = async (encoded: string, key: CryptoKey): Promise<string> => {
   const bytes = Uint8Array.from(atob(encoded), (c) => c.charCodeAt(0));
-  const iv = bytes.slice(0, 12);
-  const cipherText = bytes.slice(12);
+  const iv = bytes.slice(0, IV_LENGTH);
+  const cipherText = bytes.slice(IV_LENGTH);
   const decrypted = await subtle.decrypt({ name: 'AES-GCM', iv }, key, cipherText);
   return decoder.decode(decrypted);
 };
 
 const crypto = {
   deriveKey,
+  getEncryptedLength,
   encryptData,
   decryptData,
 };

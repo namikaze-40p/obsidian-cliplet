@@ -13,6 +13,15 @@ describe('crypto', () => {
     expect(await crypto.decryptData(await crypto.encryptData(text, key), key)).toBe(text);
   });
 
+  it.each([
+    ['empty', ''],
+    ['multibyte and newlines', 'あa😀\n2行目'],
+    ...[1, 2, 3, 4].map((length) => [`${length} bytes`, 'x'.repeat(length)]),
+  ])('predicts the ciphertext length of %s text', async (_, text) => {
+    const key = await crypto.deriveKey('vault');
+    expect((await crypto.encryptData(text, key)).length).toBe(crypto.getEncryptedLength(text));
+  });
+
   it('produces a different ciphertext for the same text each time', async () => {
     const key = await crypto.deriveKey('vault');
     expect(await crypto.encryptData('same', key)).not.toBe(await crypto.encryptData('same', key));

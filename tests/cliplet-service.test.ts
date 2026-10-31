@@ -1,5 +1,5 @@
 import dayjs from 'dayjs';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { ClipletService } from 'src/core/cliplet-service';
 import { ClipletItem, StorageType } from 'src/core/types';
@@ -151,6 +151,17 @@ describe.each<StorageType>(['idb', 'json'])('ClipletService (%s)', (storageType)
 
     expect((await service.findClipletByContent('world'))?.id).toBe('b');
     expect(await service.findClipletByContent('missing')).toBeUndefined();
+  });
+
+  it('decrypts only cliplets whose ciphertext length matches', async () => {
+    const service = await createService(createPlugin(storageType));
+    await service.addCliplet(item('a', { content: await service.encrypt('hello') }));
+    await service.addCliplet(item('b', { content: await service.encrypt('a much longer text') }));
+    const decrypt = vi.spyOn(service, 'decrypt');
+
+    // Only "hello" has the same length as "world".
+    expect(await service.findClipletByContent('world')).toBeUndefined();
+    expect(decrypt).toHaveBeenCalledTimes(1);
   });
 
   it('adds content as a new cliplet, or marks the duplicate as used', async () => {

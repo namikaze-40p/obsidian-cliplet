@@ -6,6 +6,10 @@ export const replaceWithClipboardText = async (
   content: string,
   clipboardText: string | null = null,
 ): Promise<string> => {
+  // Reading the clipboard can show a paste prompt or notification on mobile, so avoid it when unused.
+  if (!content.includes(TOKEN.clipboard)) {
+    return content;
+  }
   const replaceText = clipboardText ?? (await getClipboard());
   // split/join inserts the text literally ("$&" etc. are not treated as replacement patterns).
   return content.split(TOKEN.clipboard).join(replaceText);

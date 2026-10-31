@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { replaceWithClipboardText } from 'src/utils/text-utils';
 
@@ -9,6 +9,22 @@ describe('replaceWithClipboardText', () => {
 
   it('returns the content as is when there is no token', async () => {
     expect(await replaceWithClipboardText('no token', 'x')).toBe('no token');
+  });
+
+  describe('when the clipboard text is not given', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('reads the clipboard only when there is a token', async () => {
+      const readText = vi.fn(async () => 'CLIP');
+      vi.stubGlobal('navigator', { clipboard: { readText } });
+
+      expect(await replaceWithClipboardText('no token')).toBe('no token');
+      expect(readText).not.toHaveBeenCalled();
+      expect(await replaceWithClipboardText('<{clipboard}>')).toBe('<CLIP>');
+      expect(readText).toHaveBeenCalledTimes(1);
+    });
   });
 
   it.each(['$&', '$$5', "$` $' $1"])('inserts %s literally', async (text) => {

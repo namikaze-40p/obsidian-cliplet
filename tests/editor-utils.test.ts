@@ -1,5 +1,5 @@
 import type { Editor, EditorPosition } from 'obsidian';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { DecryptedClipletItem } from 'src/core/types';
 import { pasteCliplet } from 'src/utils/editor-utils';
@@ -79,5 +79,33 @@ describe('pasteCliplet', () => {
     const pasted = await pasteCliplet(editor, cliplet('a'), 'CLIP');
     expect(pasted.count).toBe(4);
     expect(pasted.lastUsed).toBeGreaterThan(0);
+  });
+
+  describe('when the clipboard text is not given', () => {
+    const stubClipboard = () => {
+      const readText = vi.fn(async () => 'CLIP');
+      vi.stubGlobal('navigator', { clipboard: { readText } });
+      return readText;
+    };
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('does not read the clipboard without a {clipboard} token', async () => {
+      const readText = stubClipboard();
+      const { editor, result } = createEditor('xxyy', { line: 0, ch: 2 });
+      await pasteCliplet(editor, cliplet('a{cursor}b'));
+      expect(result()).toBe('xxa|byy');
+      expect(readText).not.toHaveBeenCalled();
+    });
+
+    it('reads the clipboard only once', async () => {
+      const readText = stubClipboard();
+      const { editor, result } = createEditor('xxyy', { line: 0, ch: 2 });
+      await pasteCliplet(editor, cliplet('{clipboard}{cursor}{clipboard}'));
+      expect(result()).toBe('xxCLIP|CLIPyy');
+      expect(readText).toHaveBeenCalledTimes(1);
+    });
   });
 });

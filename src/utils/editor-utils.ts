@@ -4,7 +4,7 @@ import dayjs from 'dayjs';
 import { TOKEN } from 'src/core/consts';
 import { DecryptedClipletItem } from 'src/core/types';
 
-import { replaceWithClipboardText } from './text-utils';
+import { getClipboard, replaceWithClipboardText } from './text-utils';
 
 // Line breaks are split the same way as CodeMirror (\r\n, \r, \n).
 const getEndPosition = (from: EditorPosition, text: string): EditorPosition => {
@@ -23,18 +23,21 @@ export const pasteCliplet = async (
   const from = editor.getCursor('from');
   const to = editor.getCursor('to');
   const content = cliplet.decryptedContent;
+  // Read the clipboard at most once, even when the content is split at {cursor}.
+  const clipboard =
+    clipboardText ?? (content.includes(TOKEN.clipboard) ? await getClipboard() : '');
 
   const tokenIndex = content.indexOf(TOKEN.cursor);
 
   if (tokenIndex === -1) {
-    const replacedContent = await replaceWithClipboardText(content, clipboardText);
+    const replacedContent = await replaceWithClipboardText(content, clipboard);
     editor.replaceRange(replacedContent, from, to);
     editor.setCursor(getEndPosition(from, replacedContent));
   } else {
     const before = content.slice(0, tokenIndex);
     const after = content.slice(tokenIndex + TOKEN.cursor.length);
-    const replacedBefore = await replaceWithClipboardText(before, clipboardText);
-    const replacedAfter = await replaceWithClipboardText(after, clipboardText);
+    const replacedBefore = await replaceWithClipboardText(before, clipboard);
+    const replacedAfter = await replaceWithClipboardText(after, clipboard);
     const pasteText = replacedBefore + replacedAfter;
     editor.replaceRange(pasteText, from, to);
     editor.setCursor(getEndPosition(from, replacedBefore));

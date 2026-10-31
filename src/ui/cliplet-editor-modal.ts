@@ -2,6 +2,7 @@ import { App, Modal, Notice, Setting } from 'obsidian';
 import dayjs from 'dayjs';
 import { v4 as uuid } from 'uuid';
 
+import { getContentSizeError } from 'src/core/cliplet-item';
 import { ClipletService } from 'src/core/cliplet-service';
 import {
   IS_APPLE,
@@ -216,6 +217,11 @@ export class ClipletEditorModal extends Modal {
     const { name, content } = this._form;
     if (!content) {
       new Notice('Content is empty.\nPlease enter content to save.');
+      return;
+    }
+    const sizeError = getContentSizeError(content);
+    if (sizeError) {
+      new Notice(sizeError);
       return;
     }
 

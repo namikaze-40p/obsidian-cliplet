@@ -4,6 +4,8 @@ export const RETENTION_PERIOD = 60;
 export const MAXIMUM_RECORDS = 200;
 // Unnamed cliplets kept even when protected ones reach MAXIMUM_RECORDS, so that "Add" keeps working.
 export const MINIMUM_UNPROTECTED_RECORDS = 10;
+// In UTF-8 bytes of the plaintext, so that the worst case of storage and memory stays predictable.
+export const MAXIMUM_CONTENT_SIZE = 100 * 1024;
 
 export const IS_APPLE = Platform.isMacOS || Platform.isIosApp;
 

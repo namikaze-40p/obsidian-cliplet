@@ -1,6 +1,7 @@
 import { Editor, Notice, Plugin } from 'obsidian';
 import { v4 as uuid } from 'uuid';
 
+import { getContentSizeError } from './core/cliplet-item';
 import { MAXIMUM_RECORDS, MINIMUM_UNPROTECTED_RECORDS, RETENTION_PERIOD } from './core/consts';
 import { ClipletService } from './core/cliplet-service';
 import { ClipletSearchModal } from './ui/cliplet-search-modal';
@@ -117,6 +118,13 @@ export default class Cliplet extends Plugin {
   private async addCliplet(content: string): Promise<void> {
     const service = this.getAvailableService();
     if (!service) {
+      return;
+    }
+
+    // Checked before the duplicate check, which decrypts every cliplet.
+    const sizeError = getContentSizeError(content);
+    if (sizeError) {
+      new Notice(sizeError);
       return;
     }
 
